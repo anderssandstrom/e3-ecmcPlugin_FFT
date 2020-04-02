@@ -23,10 +23,10 @@ extern "C" {
 #include <string.h>
 
 #include "ecmcPluginDefs.h"
-#include "ecmcAdvanced.h"
-#include "ecmcPLC.h"
+#include "ecmcFFT.h"
 
-#define ECMC_PLUGIN_DBG_OPTION_CMD "DBG_PRINT"
+#define ECMC_PLUGIN_DBG_OPTION_CMD "DBG_PRINT="
+#define ECMC_PLUGIN_SOURCE_OPTION_CMD "SOURCE="
 
 #define PRINT_IF_DBG_MODE(fmt, ...)       \
   {                                       \
@@ -40,6 +40,8 @@ static double ecmcSampleRate = 0;
 static void*  ecmcAsynPort   = NULL;
 static char*  confStr        = NULL;
 static int    dbgModeOption  = 0;
+static char*  source         = NULL;
+
 
 /** Optional. 
  *  Will be called once after successfull load into ecmc.
@@ -48,18 +50,44 @@ static int    dbgModeOption  = 0;
  **/
 int adv_exampleConstruct(char * configStr)
 {
-  confStr = strdup(configStr);
-  //Only one option defined "DBG_PRINT=" (no need for loop)
-  int tempValue=0;
-  int nvals = sscanf(confStr, ECMC_PLUGIN_DBG_OPTION_CMD"=%d",&tempValue);
-  if (nvals == 1) {
-    dbgModeOption = tempValue;
-  }
-  
   PRINT_IF_DBG_MODE("%s/%s:%d: ConfigStr=\"%s\"...\n",__FILE__, __FUNCTION__, __LINE__,configStr);
+  // check config parameters
+  if (configStr && configStr[0]) {    
+    char *pOptions = strdup(configStr);
+    char *pThisOption = pOptions;
+    char *pNextOption = pOptions;
+
+    while (pNextOption && pNextOption[0]) {
+      pNextOption = strchr(pNextOption, ';');
+      if (pNextOption) {
+        *pNextOption = '\0'; /* Terminate */
+        pNextOption++;       /* Jump to (possible) next */
+      }
+      
+      // ECMC_PLUGIN_DBG_OPTION_CMD
+      if (!strncmp(pThisOption, ECMC_PLUGIN_DBG_OPTION_CMD, strlen(ECMC_PLUGIN_DBG_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_DBG_OPTION_CMD);
+        dbgModeOption = atoi(pThisOption);
+      } 
+      
+      // ECMC_PLUGIN_SOURCE_OPTION_CMD
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD);
+        // get string to next ';'
+         source=strdup(pThisOption);
+      } 
+      pThisOption = pNextOption;
+    }    
+    free(pOptions);
+  }
+  //printout options
+  PRINT_IF_DBG_MODE("%s/%s:%d: %s%d, %s\"%s\"\n",__FILE__, 
+                    __FUNCTION__, __LINE__,ECMC_PLUGIN_DBG_OPTION_CMD,
+                    dbgModeOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, source);
+  
   // Determine ecmc sample rate (just for demo)
   ecmcSampleRate = getSampleRate();
-  PRINT_IF_DBG_MODE("%s/%s:%d Ecmc sample rate is: %lf ms\n",__FILE__, __FUNCTION__, __LINE__,ecmcSampleRate);
+  PRINT_IF_DBG_MODE("%s/%s:%d: Ecmc sample rate is: %lf ms\n",__FILE__, __FUNCTION__, __LINE__,ecmcSampleRate);
 
   // Use ecmcAsynPort (just for demo)
   ecmcAsynPort = getAsynPort();
@@ -77,6 +105,10 @@ void adv_exampleDestruct(void)
 {
   PRINT_IF_DBG_MODE("%s/%s:%d...\n",__FILE__, __FUNCTION__, __LINE__);
   
+  if(source) {
+    free(source);
+  }
+
   if(confStr){
     free(confStr);
   }
@@ -89,13 +121,7 @@ void adv_exampleDestruct(void)
  *  Return value other than 0 will be considered to be an error code in ecmc.
  **/
 int adv_exampleRealtime(int ecmcError)
-{
-  // Check if plc 0 is enabled.. Just to show something with the ecmc headers
-  int plcEnabled = 0;
-  getPLCEnable(0,&plcEnabled);
-
-  PRINT_IF_DBG_MODE("%s/%s:%d: plc0.enabled=%d\n",__FILE__, __FUNCTION__, __LINE__,plcEnabled);
-  
+{  
   //Update asynparam counter
   increaseCounter();
   lastEcmcError = ecmcError;
@@ -119,30 +145,17 @@ int adv_exampleExitRT(void){
   return 0;
 }
 
-/** Optional plc function 1*/
-double adv_customPlcFunc1(double arg1, double arg2)
-{
-  PRINT_IF_DBG_MODE("%s/%s:%d...\n",__FILE__, __FUNCTION__, __LINE__);
-  return arg1 * arg2;
-}
-
-/** Optional plc function 2*/
-double adv_customPlcFunc2(double arg1, double arg2, double arg3)
-{
-  PRINT_IF_DBG_MODE("%s/%s:%d...\n",__FILE__, __FUNCTION__, __LINE__);
-  return arg1 * arg2 * arg3;
-}
-
 // Register data for plugin so ecmc know what to use
 struct ecmcPluginData pluginDataDef = {
   // Allways use ECMC_PLUG_VERSION_MAGIC
   .ifVersion = ECMC_PLUG_VERSION_MAGIC, 
   // Name 
-  .name = "ecmcExamplePlugin",
+  .name = "ecmcPlugin_FFT",
   // Description
-  .desc = "Advanced example with use of asynport obj.",
+  .desc = "FFT plugin for use with ecmc.",
   // Option description
-  .optionDesc = ECMC_PLUGIN_DBG_OPTION_CMD"=1/0 : Enables/disables printouts from plugin.",
+  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"1/0      : Enables/disables printouts from plugin.\n"
+                "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).",
   // Plugin version
   .version = ECMC_EXAMPLE_PLUGIN_VERSION,
   // Optional construct func, called once at load. NULL if not definded.
@@ -155,67 +168,10 @@ struct ecmcPluginData pluginDataDef = {
   .realtimeEnterFnc = adv_exampleEnterRT,
   // Optional func that will be called once just before exit realtime mode
   .realtimeExitFnc = adv_exampleExitRT,
-
-  // Allow max s custom plc funcs
-  .funcs[0] =      
-      { /*----customPlcFunc1----*/
-        // Function name (this is the name you use in ecmc plc-code)
-        .funcName = "adv_plugin_func_1",
-        // Function description
-        .funcDesc = "Multiply arg0 with arg1.",
-        /**
-        * 11 different prototypes allowed (only doubles since reg in plc).
-        * Only one funcArg<argCount> func shall be assigned the rest set to NULL.
-        **/
-        .funcArg0  = NULL,
-        .funcArg1  = NULL,
-        .funcArg2  = adv_customPlcFunc1, // Func 1 has 2 args
-        .funcArg3  = NULL,
-        .funcArg4  = NULL,
-        .funcArg5  = NULL,
-        .funcArg6  = NULL,
-        .funcArg7  = NULL,
-        .funcArg8  = NULL,
-        .funcArg9  = NULL,
-        .funcArg10 = NULL
-      },
-  .funcs[1] =
-      { /*----customPlcFunc2----*/
-        // Function name (this is the name you use in ecmc plc-code)
-        .funcName = "adv_plugin_func_2",
-        // Function description
-        .funcDesc = "Multiply arg0, arg1 and arg2.",
-        /**
-        * 11 different prototypes allowed (only doubles since reg in plc).
-        * Only funcArg${argCount} func shall be assigned the rest set to NULL.
-        **/
-        .funcArg0  = NULL,
-        .funcArg1  = NULL,
-        .funcArg2  = NULL,
-        .funcArg3  = adv_customPlcFunc2, // Func 2 has 3 args
-        .funcArg4  = NULL,
-        .funcArg5  = NULL,
-        .funcArg6  = NULL,
-        .funcArg7  = NULL,
-        .funcArg8  = NULL,
-        .funcArg9  = NULL,
-        .funcArg10 = NULL
-      },
-  .funcs[2] = {0}, // last element set all to zero..
-
-  /** Plugin specific constants (add prefix to not risc collide with 
-   *  names from other modules) */
-  .consts[0] = {
-        .constName = "adv_CONST_1",
-        .constDesc = "Test constant \"adv_CONST_1\" = 1.234567890",
-        .constValue = 1.234567890,
-      },
-  .consts[1] = {
-        .constName = "adv_CONST_2",
-        .constDesc = "Test constant \"adv_CONST_2\" = 9.876543210",
-        .constValue = 9.876543210,
-      },
-  .consts[2] = {0}, // last element set all to zero..
+  // PLC funcs
+  .funcs[0] = {0},  // last element set all to zero..
+  // PLC consts
+  .consts[0] = {0}, // last element set all to zero..
 };
 
 ecmc_plugin_register(pluginDataDef);

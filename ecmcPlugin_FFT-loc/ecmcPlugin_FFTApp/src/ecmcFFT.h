@@ -3,14 +3,14 @@
 * ecmc is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution. 
 *
-*  ecmcAdvanced.h
+*  ecmcFFT.h
 *
 *  Created on: Mar 22, 2020
 *      Author: anderssandstrom
 *
 \*************************************************************************/
-#ifndef ECMC_ADVANCED_H_
-#define ECMC_ADVANCED_H_
+#ifndef ECMC_FFT_H_
+#define ECMC_FFT_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,4 +29,4 @@ void   increaseCounter();
 }
 #endif  // ifdef __cplusplus
 
-#endif  /* ECMC_ADVANCED_H_ */
+#endif  /* ECMC_FFT_H_ */

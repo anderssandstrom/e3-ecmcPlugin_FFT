@@ -3,7 +3,7 @@
 * ecmc is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution. 
 *
-*  ecmcAdvanced.cpp
+*  ecmcFFT.cpp
 *
 *  Created on: Mar 22, 2020
 *      Author: anderssandstrom
@@ -18,7 +18,7 @@
 #define ECMC_ERROR_ASYNPORT_NULL 1
 #define ECMC_ERROR_ASYN_PARAM_FAIL 2
 
-#include "ecmcAdvanced.h"
+#include "ecmcFFT.h"
 #include "ecmcPluginClient.h"
 #include "ecmcAsynPortDriver.h"
 
@@ -42,7 +42,7 @@ int initAsyn() {
   
   ecmcAsynPortDriver *ecmcAsynPort = (ecmcAsynPortDriver *)getEcmcAsynPortDriver();
   if(!ecmcAsynPort) {
-    printf("Error: ecmcPlugin_Advanced: ecmcAsynPortDriver NULL.");
+    printf("Error: ecmcPlugin_FFT: ecmcAsynPortDriver NULL.");
     return ECMC_ERROR_ASYNPORT_NULL;
   }
 
@@ -55,7 +55,7 @@ int initAsyn() {
                                          ECMC_EC_S32,          // ecmc data type
                                          0);                   // die if fail
   if(!paramCount) {
-    printf("Error: ecmcPlugin_Advanced: Failed to create asyn param \"plugin.adv.counter\".");
+    printf("Error: ecmcPlugin_FFT: Failed to create asyn param \"plugin.adv.counter\".");
     return ECMC_ERROR_ASYN_PARAM_FAIL;
   }
   paramCount->addSupportedAsynType(asynParamInt32);  // Only allw records of this type 

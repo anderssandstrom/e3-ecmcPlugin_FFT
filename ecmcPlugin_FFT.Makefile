@@ -24,9 +24,6 @@
 # Please look at many other _module_.Makefile in e3-* repository
 # 
 
-
-
-
 ## The following lines are mandatory, please don't change them.
 where_am_I := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 include $(E3_REQUIRE_TOOLS)/driver.makefile
@@ -40,7 +37,7 @@ ifneq ($(strip $(ECMC_DEP_VERSION)),)
 ecmc_VERSION=$(ECMC_DEP_VERSION)
 endif
 
-APP:=ecmcPlugin_AdvancedApp
+APP:=ecmcPlugin_FFTApp
 APPDB:=$(APP)/Db
 APPSRC:=$(APP)/src
 
@@ -49,8 +46,8 @@ USR_LDFLAGS  += -lstdc++
 USR_INCLUDES += -I$(where_am_I)$(APPSRC)
 
 TEMPLATES += $(wildcard $(APPDB)/*.db)
-SOURCES += $(APPSRC)/ecmcPluginExample.c
-SOURCES += $(APPSRC)/ecmcAdvanced.cpp
+SOURCES += $(APPSRC)/ecmcPluginFFT.c
+SOURCES += $(APPSRC)/ecmcFFT.cpp
 
 db:
 
