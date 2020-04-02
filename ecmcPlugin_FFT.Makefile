@@ -47,6 +47,7 @@ USR_INCLUDES += -I$(where_am_I)$(APPSRC)
 
 TEMPLATES += $(wildcard $(APPDB)/*.db)
 SOURCES += $(APPSRC)/ecmcPluginFFT.c
+SOURCES += $(APPSRC)/ecmcFFTWrap.cpp
 SOURCES += $(APPSRC)/ecmcFFT.cpp
 
 db:

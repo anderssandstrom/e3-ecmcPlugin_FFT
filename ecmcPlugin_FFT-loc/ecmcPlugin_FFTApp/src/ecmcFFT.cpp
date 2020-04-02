@@ -14,62 +14,22 @@
 // Needed to get headers in ecmc right...
 #define ECMC_IS_PLUGIN
 
-// Error Codes
-#define ECMC_ERROR_ASYNPORT_NULL 1
-#define ECMC_ERROR_ASYN_PARAM_FAIL 2
-
 #include "ecmcFFT.h"
-#include "ecmcPluginClient.h"
-#include "ecmcAsynPortDriver.h"
 
-// Vars
-static int counter = 0;
-static ecmcAsynDataItem *paramCount = NULL;
-
-// Use ecmcPluginClient.h interface
-double getSampleRate() {
-    
-  return getEcmcSampleRate();
+// data callback 
+void dataUpdatedCallback(uint8_t* data, size_t size, ecmcEcDataType dt, void* obj) {
+  printf("Data updates\n");
 }
 
-// Use ecmcPluginClient.h interface
-void* getAsynPort() {
-  return getEcmcAsynPortDriver();
+ecmcFFT::ecmcFFT(ecmcDataItem* dataItem, ecmcAsynPortDriver* asynPort) {
+  dataItem_ = dataItem;
+  asynPort_ = asynPort;
 }
 
-// register a dummy asyn parameter "plugin.adv.counter"
-int initAsyn() {
-  
-  ecmcAsynPortDriver *ecmcAsynPort = (ecmcAsynPortDriver *)getEcmcAsynPortDriver();
-  if(!ecmcAsynPort) {
-    printf("Error: ecmcPlugin_FFT: ecmcAsynPortDriver NULL.");
-    return ECMC_ERROR_ASYNPORT_NULL;
-  }
+ecmcFFT::~ecmcFFT() {
 
-  // Add a dummy counter that incraeses one for each rt cycle
-  paramCount = ecmcAsynPort->addNewAvailParam(
-                                        "plugin.adv.counter",  // name
-                                         asynParamInt32,       // asyn type 
-                                         (uint8_t *)&(counter),// pointer to data
-                                         sizeof(counter),      // size of data
-                                         ECMC_EC_S32,          // ecmc data type
-                                         0);                   // die if fail
-  if(!paramCount) {
-    printf("Error: ecmcPlugin_FFT: Failed to create asyn param \"plugin.adv.counter\".");
-    return ECMC_ERROR_ASYN_PARAM_FAIL;
-  }
-  paramCount->addSupportedAsynType(asynParamInt32);  // Only allw records of this type 
-  paramCount->setAllowWriteToEcmc(false);  // read only
-  paramCount->refreshParam(1); // read once into asyn param lib
-  ecmcAsynPort->callParamCallbacks(ECMC_ASYN_DEFAULT_LIST, ECMC_ASYN_DEFAULT_ADDR);
-  return 0;
 }
 
-// increase value of counter and refresh asyn param
-void increaseCounter(){
-  counter++;
-  if(paramCount){
-    paramCount->refreshParamRT(0);
-    // "callParamCallbacks" are handled in ecmc rt thread so don't call
-  }
+int ecmcFFT::ConnectToDataSource() {
+  return dataItem_->regDataUpdatedCallback(dataUpdatedCallback, this);
 }

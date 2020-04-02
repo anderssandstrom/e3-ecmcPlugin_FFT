@@ -23,32 +23,24 @@ extern "C" {
 #include <string.h>
 
 #include "ecmcPluginDefs.h"
-#include "ecmcFFT.h"
+#include "ecmcPluginClient.h"
+#include "ecmcFFTWrap.h"
 
+//Options
 #define ECMC_PLUGIN_DBG_OPTION_CMD "DBG_PRINT="
 #define ECMC_PLUGIN_SOURCE_OPTION_CMD "SOURCE="
 
-#define PRINT_IF_DBG_MODE(fmt, ...)       \
-  {                                       \
-    if(dbgModeOption){                    \
-      printf(fmt, ## __VA_ARGS__);        \
-    }                                     \
-  }                                       \
-
-static int    lastEcmcError  = 0;
-static double ecmcSampleRate = 0;
-static void*  ecmcAsynPort   = NULL;
-static char*  confStr        = NULL;
-static int    dbgModeOption  = 0;
-static char*  source         = NULL;
-
+static int    lastEcmcError   = 0;
+static char*  confStr         = NULL;
+static int    dbgModeOption   = 0;
+static char*  source          = NULL;
 
 /** Optional. 
  *  Will be called once after successfull load into ecmc.
  *  Return value other than 0 will be considered error.
  *  configStr can be used for configuration parameters.
  **/
-int adv_exampleConstruct(char * configStr)
+int adv_exampleConstruct(char *configStr)
 {
   PRINT_IF_DBG_MODE("%s/%s:%d: ConfigStr=\"%s\"...\n",__FILE__, __FUNCTION__, __LINE__,configStr);
   // check config parameters
@@ -56,7 +48,8 @@ int adv_exampleConstruct(char * configStr)
     char *pOptions = strdup(configStr);
     char *pThisOption = pOptions;
     char *pNextOption = pOptions;
-
+    PRINT_IF_DBG_MODE("%s/%s:%d: Error: "ECMC_PLUGIN_SOURCE_OPTION_CMD"NULL.\n",
+                      __FILE__, __FUNCTION__, __LINE__);
     while (pNextOption && pNextOption[0]) {
       pNextOption = strchr(pNextOption, ';');
       if (pNextOption) {
@@ -80,22 +73,21 @@ int adv_exampleConstruct(char * configStr)
     }    
     free(pOptions);
   }
+
   //printout options
   PRINT_IF_DBG_MODE("%s/%s:%d: %s%d, %s\"%s\"\n",__FILE__, 
                     __FUNCTION__, __LINE__,ECMC_PLUGIN_DBG_OPTION_CMD,
                     dbgModeOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, source);
   
-  // Determine ecmc sample rate (just for demo)
-  ecmcSampleRate = getSampleRate();
-  PRINT_IF_DBG_MODE("%s/%s:%d: Ecmc sample rate is: %lf ms\n",__FILE__, __FUNCTION__, __LINE__,ecmcSampleRate);
+  // Check that SOURCE are defined
+  if(!source) {
+    PRINT_IF_DBG_MODE("%s/%s:%d: Error: "ECMC_PLUGIN_SOURCE_OPTION_CMD"NULL (0x%x).\n",
+                      __FILE__, __FUNCTION__, __LINE__, ECMC_PLUGIN_ERROR_NO_SOURCE);
+    return ECMC_PLUGIN_ERROR_NO_SOURCE;
+  }
 
-  // Use ecmcAsynPort (just for demo)
-  ecmcAsynPort = getAsynPort();
-
-  // init asyn param counter
-  initAsyn(ecmcAsynPort);
-  
-  return 0;
+  // create FFT object and register data callback
+  return createFFT(source, dbgModeOption);
 }
 
 /** Optional function.
@@ -122,8 +114,6 @@ void adv_exampleDestruct(void)
  **/
 int adv_exampleRealtime(int ecmcError)
 {  
-  //Update asynparam counter
-  increaseCounter();
   lastEcmcError = ecmcError;
   return 0;
 }

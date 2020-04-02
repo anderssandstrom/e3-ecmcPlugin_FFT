@@ -12,21 +12,20 @@
 #ifndef ECMC_FFT_H_
 #define ECMC_FFT_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif  // ifdef __cplusplus
+#include "ecmcDataItem.h"
+#include "ecmcAsynPortDriver.h"
 
-// get ecmc rt sample rate from ecmcPluginClient.h funcs
-double getSampleRate();
-// get ecmcAsynPort from ecmcPluginClient.h funcs
-void*  getAsynPort();
-// register a dummy asyn parameter "plugin.adv.counter"
-int    initAsyn();
-// increase value of counter and refresh asyn param
-void   increaseCounter();
+class ecmcFFT {
+ public:
+  ecmcFFT(ecmcDataItem *dataItem, ecmcAsynPortDriver* asynPort);
+  ~ecmcFFT();  
 
-#ifdef __cplusplus
-}
-#endif  // ifdef __cplusplus
+  //Register callback
+  int ConnectToDataSource();
+
+ private:
+  ecmcDataItem       *dataItem_;
+  ecmcAsynPortDriver *asynPort_;
+};
 
 #endif  /* ECMC_FFT_H_ */
