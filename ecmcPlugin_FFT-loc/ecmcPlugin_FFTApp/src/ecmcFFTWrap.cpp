@@ -52,5 +52,5 @@ int createFFT(char* source, int dbgMode) {
   }  
   
   // Register callback
-  return fft->ConnectToDataSource();
+  return fft->getErrorId();
 }
