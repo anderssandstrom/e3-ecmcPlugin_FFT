@@ -15,10 +15,14 @@
 #define ECMC_FFT_DEFS_H_
 
 // Options
-#define ECMC_PLUGIN_DBG_OPTION_CMD "DBG_PRINT="
+#define ECMC_PLUGIN_DBG_OPTION_CMD    "DBG_PRINT="
 #define ECMC_PLUGIN_SOURCE_OPTION_CMD "SOURCE="
+#define ECMC_PLUGIN_NFFT_OPTION_CMD   "NFFT="
 
 // Just one error code in "c" part of plugin
 #define ECMC_PLUGIN_FFT_ERROR_CODE 1
+
+// Default size (must be n²)
+#define ECMC_PLUGIN_DEFAULT_NFFT 8192
 
 #endif  /* ECMC_FFT_DEFS_H_ */

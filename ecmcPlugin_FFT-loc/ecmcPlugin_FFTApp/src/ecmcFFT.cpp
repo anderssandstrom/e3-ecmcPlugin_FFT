@@ -20,6 +20,14 @@
 #include "ecmcAsynPortDriver.h"
 #include "kissfft/kissfft.hh"
 
+#define PRINT_IF_DBG_MODE(fmt, ...)        \
+   {                                       \
+     if(dbgMode_){                         \
+       printf(fmt, ## __VA_ARGS__);        \
+     }                                     \
+   }                                       \
+
+
 // New data callback from ecmc
 static int printMissingObjError = 1;
 
@@ -34,16 +42,16 @@ void f_dataUpdatedCallback(uint8_t* data, size_t size, ecmcEcDataType dt, void* 
   }
   ecmcFFT * fftObj = (ecmcFFT*)obj;
 
-  // Fill object buffer with data
+  // Call the correct fft object with new data
   fftObj->dataUpdatedCallback(data,size,dt);
 }
 
 
 /** ecmc FFT class
- *can throw: 
- *    bad_alloc
- *    invalid_argument
- *    runtime_error
+ * This object can throw: 
+ *    - bad_alloc
+ *    - invalid_argument
+ *    - runtime_error
 */
 ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object
                  char* configStr) {
@@ -82,7 +90,7 @@ ecmcFFT::~ecmcFFT() {
   }
 }
 
-int  ecmcFFT::parseConfigStr(char *configStr) {
+void ecmcFFT::parseConfigStr(char *configStr) {
 
   // check config parameters
   if (configStr && configStr[0]) {    
@@ -107,8 +115,15 @@ int  ecmcFFT::parseConfigStr(char *configStr) {
       else if (!strncmp(pThisOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD);
         // get string to next ';'
-         dataSourceStr_=strdup(pThisOption);
-      } 
+        dataSourceStr_=strdup(pThisOption);
+      }
+
+      // ECMC_PLUGIN_NFFT_OPTION_CMD
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_NFFT_OPTION_CMD, strlen(ECMC_PLUGIN_NFFT_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_NFFT_OPTION_CMD);
+        // get string to next ';'
+        nfft_ = atoi(pThisOption);
+      }
       pThisOption = pNextOption;
     }    
     free(pOptions);
@@ -118,11 +133,11 @@ int  ecmcFFT::parseConfigStr(char *configStr) {
   }
 }
 
-int ecmcFFT::connectToDataSource() {
+void ecmcFFT::connectToDataSource() {
   // Get dataItem
   dataItem_        = (ecmcDataItem*) getEcmcDataItem(dataSourceStr_);
   if(!dataItem_) {
-    throw std::runtime_error("Data item NULL");
+    throw std::runtime_error("Data item NULL.");
   }
 
   // Register data callback
@@ -134,9 +149,8 @@ int ecmcFFT::connectToDataSource() {
 
   // Check data source
   if( !dataTypeSupported(dataItem_->getEcmcDataType()) ) {
-    throw std::invalid_argument( "Data type not supported");
+    throw std::invalid_argument( "Data type not supported.");
   }
-  return 0;
 }
 
 void ecmcFFT::dataUpdatedCallback(uint8_t*       data, 
@@ -146,12 +160,14 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   if(!dataBuffer_) {
     return;
   }
+  
+  if(dbgMode_) {
+    printf("fft id: %d, data: ",objectId_);
+    printData(data,size,dt);
 
-  printf("fft id: %d, data: ",objectId_);
-  printData(data,size,dt);
-
-  if(bytesInBuffer_ == bufferSizeBytes_) {
-    printf("Buffer full (%zu bytes appended).\n",bytesInBuffer_);
+    if(bytesInBuffer_ == bufferSizeBytes_) {
+      printf("Buffer full (%zu bytes appended).\n",bytesInBuffer_);
+    }
   }
 
   // Start to fill buffer
@@ -166,10 +182,6 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 void ecmcFFT::clearBuffer() {
   memset(dataBuffer_,0,bufferSizeBytes_);
   bytesInBuffer_ = 0;
-}
-
-int ecmcFFT::getErrorId() {
-  return errorId_;
 }
 
 void ecmcFFT::printData(uint8_t*       data, 

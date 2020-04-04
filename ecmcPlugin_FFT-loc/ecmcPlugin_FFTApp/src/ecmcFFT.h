@@ -12,37 +12,40 @@
 #ifndef ECMC_FFT_H_
 #define ECMC_FFT_H_
 
-#define ECMC_PLUGIN_DEFAULT_NFFT 8192
-
+#include <stdexcept>
 #include "ecmcDataItem.h"
 #include "ecmcAsynPortDriver.h"
 #include "inttypes.h"
-#include <stdexcept>
 
 class ecmcFFT {
  public:
-  ecmcFFT(int   fftIndex,       // index of this object  
+
+  /** ecmc FFT class
+   * This object can throw: 
+   *    - bad_alloc
+   *    - invalid_argument
+   *    - runtime_error
+  */
+  ecmcFFT(int   fftIndex,    // index of this object  
           char* configStr);
-
   ~ecmcFFT();  
-
-  int getErrorId();
 
   // Add data to buffer
   void dataUpdatedCallback(uint8_t* data, 
                            size_t size,
                            ecmcEcDataType dt);
  private:
-  int  parseConfigStr(char *configStr);
-  int  connectToDataSource();
-  void clearBuffer();  
+  void  parseConfigStr(char *configStr);
+  void  connectToDataSource();
+  void  clearBuffer();
+   
   ecmcDataItem       *dataItem_;
   ecmcAsynPortDriver *asynPort_;
   uint8_t*            dataBuffer_;
   size_t              nfft_;
   size_t              bufferSizeBytes_;
   size_t              bytesInBuffer_;
-  int                 errorId_;
+  // ecmc callback handle for use when deregister at unload
   int                 callbackHandle_;
   int                 dbgMode_;  //Allow dbg printouts
   char*               dataSourceStr_;
@@ -50,7 +53,7 @@ class ecmcFFT {
   int                 objectId_;
   static int          dataTypeSupported(ecmcEcDataType dt);
 
-  //Some utility functions
+  // Some utility functions
   static uint8_t      getUint8(uint8_t* data);
   static int8_t       getInt8(uint8_t* data);
   static uint16_t     getUint16(uint8_t* data);
@@ -61,13 +64,10 @@ class ecmcFFT {
   static int64_t      getInt64(uint8_t* data);
   static float        getFloat32(uint8_t* data);
   static double       getFloat64(uint8_t* data);
-
   static size_t       getEcDataTypeByteSize(ecmcEcDataType dt);
-
-  static void      printData(uint8_t*       data, 
-                             size_t         size,
-                             ecmcEcDataType dt);
-
+  static void         printData(uint8_t*       data, 
+                                size_t         size,
+                                ecmcEcDataType dt);
 };
 
 #endif  /* ECMC_FFT_H_ */
