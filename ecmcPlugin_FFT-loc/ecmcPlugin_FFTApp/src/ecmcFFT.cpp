@@ -18,7 +18,6 @@
 #include "ecmcFFTDefs.h"
 #include "ecmcPluginClient.h"
 #include "ecmcAsynPortDriver.h"
-#include "kissfft/kissfft.hh"
 
 #define PRINT_IF_DBG_MODE(fmt, ...)        \
    {                                       \
@@ -55,26 +54,34 @@ void f_dataUpdatedCallback(uint8_t* data, size_t size, ecmcEcDataType dt, void* 
 */
 ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object
                  char* configStr) {
-  dataSourceStr_   = NULL;
-  dataBuffer_      = NULL;
-  dataItem_        = NULL;
-  bufferSizeBytes_ = 0;
-  bytesInBuffer_   = 0;
-  dbgMode_         = 0;
-  callbackHandle_  = -1;
-  objectId_        = fftIndex;
-  nfft_            = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
-  asynPort_        = (ecmcAsynPortDriver*) getEcmcAsynPortDriver();
+  dataSourceStr_    = NULL;
+  dataBuffer_       = NULL;
+  dataItem_         = NULL;
+  fftDouble_        = NULL;
+  asynPort_         = NULL;
+  elementsInBuffer_ = 0;
+  dbgMode_          = 0;
+  fftCalcDone_      = 0;
+  callbackHandle_   = -1;
+  objectId_         = fftIndex;
+  nfft_             = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
+  asynPort_         = (ecmcAsynPortDriver*) getEcmcAsynPortDriver();
   if(!asynPort_) {
     throw std::runtime_error("Asyn port NULL");
   }
 
-  parseConfigStr(configStr);
-  connectToDataSource();
+  parseConfigStr(configStr); // Assigns Configs
+  connectToDataSource();     // Also assigns dataItem_
 
-  bufferSizeBytes_ = nfft_ * dataItem_->getEcmcDataElementSize();
-  dataBuffer_      = new uint8_t[bufferSizeBytes_];
-  clearBuffer();
+  // Allocate buffers
+  dataBufferSize_  = nfft_ * sizeof(double);
+  dataBuffer_      = new double[dataBufferSize_];
+  fftBufferSize_   = (nfft_ * sizeof(double)) / 2 + 1;
+  fftBuffer_       = new std::complex<double>[fftBufferSize_];
+  clearBuffers();
+
+  // Allocate KissFFT
+  fftDouble_ = new kissfft<double>(nfft_,false);
 }
 
 ecmcFFT::~ecmcFFT() {
@@ -87,6 +94,9 @@ ecmcFFT::~ecmcFFT() {
   }
   if(dataSourceStr_) {
     free(dataSourceStr_);
+  }
+  if(fftDouble_) {
+    delete fftDouble_;
   }
 }
 
@@ -165,23 +175,82 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     printf("fft id: %d, data: ",objectId_);
     printData(data,size,dt);
 
-    if(bytesInBuffer_ == bufferSizeBytes_) {
-      printf("Buffer full (%zu bytes appended).\n",bytesInBuffer_);
+    if(elementsInBuffer_ == nfft_) {
+      printf("Buffer full (%zu elements appended).\n",elementsInBuffer_);
     }
   }
-
-  // Start to fill buffer
-  size_t bytesToCp = size;
-  if(bytesToCp > bufferSizeBytes_ - bytesInBuffer_) {
-    bytesToCp = bufferSizeBytes_ - bytesInBuffer_;
-  }
-  memcpy(&dataBuffer_[bytesInBuffer_],data,bytesToCp);
-  bytesInBuffer_+=bytesToCp;
-}
   
-void ecmcFFT::clearBuffer() {
-  memset(dataBuffer_,0,bufferSizeBytes_);
-  bytesInBuffer_ = 0;
+  if(elementsInBuffer_ >= nfft_) {
+    //Buffer full
+    if(!fftCalcDone_){
+      printf("################# calc fft #####################");
+      calcFFT();
+      // Buffer new data
+      clearBuffers();
+    }
+    return;
+  }
+
+  size_t dataElementSize = getEcDataTypeByteSize(dt);
+
+  uint8_t *pData = data;
+  for(unsigned int i = 0; i < size / dataElementSize; ++i) {    
+    switch(dt) {
+      case ECMC_EC_U8:        
+        addDataToBuffer((double)getUint8(pData));
+        break;
+      case ECMC_EC_S8:
+        addDataToBuffer((double)getInt8(pData));
+        break;
+      case ECMC_EC_U16:
+        addDataToBuffer((double)getUint16(pData));
+        break;
+      case ECMC_EC_S16:
+        addDataToBuffer((double)getInt16(pData));
+        break;
+      case ECMC_EC_U32:
+        addDataToBuffer((double)getUint32(pData));
+        break;
+      case ECMC_EC_S32:
+        addDataToBuffer((double)getInt32(pData));
+        break;
+      case ECMC_EC_U64:
+        addDataToBuffer((double)getInt64(pData));
+        break;
+      case ECMC_EC_S64:
+        addDataToBuffer((double)getInt64(pData));
+        break;
+      case ECMC_EC_F32:
+        addDataToBuffer((double)getFloat32(pData));
+        break;
+      case ECMC_EC_F64:
+        addDataToBuffer((double)getFloat64(pData));
+        break;
+      default:
+        break;
+    }
+    
+    pData += dataElementSize;
+  }
+}
+
+void ecmcFFT::addDataToBuffer(double data) {
+  if(dataBuffer_ && elementsInBuffer_ < nfft_) {
+    dataBuffer_[elementsInBuffer_] = data;
+  }
+  elementsInBuffer_ ++;
+}
+
+void ecmcFFT::clearBuffers() {
+  memset(dataBuffer_, 0, dataBufferSize_);
+  elementsInBuffer_ = 0;
+  memset(fftBuffer_, 0, fftBufferSize_);
+  fftCalcDone_ = 0;
+}
+
+void ecmcFFT::calcFFT() {
+  fftDouble_->transform_real(dataBuffer_,fftBuffer_);
+  fftCalcDone_ = 1;
 }
 
 void ecmcFFT::printData(uint8_t*       data, 
@@ -226,9 +295,9 @@ void ecmcFFT::printData(uint8_t*       data,
       default:
         break;
     }
+    
+    pData += dataElementSize;
   }
-  // go to next element
-  pData += dataElementSize;
 }
 
 int ecmcFFT::dataTypeSupported(ecmcEcDataType dt) {

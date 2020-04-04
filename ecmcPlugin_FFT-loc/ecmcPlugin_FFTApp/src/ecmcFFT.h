@@ -16,6 +16,7 @@
 #include "ecmcDataItem.h"
 #include "ecmcAsynPortDriver.h"
 #include "inttypes.h"
+#include "kissfft/kissfft.hh"
 
 class ecmcFFT {
  public:
@@ -37,37 +38,43 @@ class ecmcFFT {
  private:
   void  parseConfigStr(char *configStr);
   void  connectToDataSource();
-  void  clearBuffer();
-   
-  ecmcDataItem       *dataItem_;
-  ecmcAsynPortDriver *asynPort_;
-  uint8_t*            dataBuffer_;
-  size_t              nfft_;
-  size_t              bufferSizeBytes_;
-  size_t              bytesInBuffer_;
+  void  clearBuffers();
+  void  calcFFT();
+  void  addDataToBuffer(double data);
+
+  ecmcDataItem         *dataItem_;
+  ecmcAsynPortDriver   *asynPort_;
+  double*               dataBuffer_;
+  size_t                dataBufferSize_;
+  std::complex<double>* fftBuffer_; // Result
+  size_t                fftBufferSize_;
+  size_t                nfft_;
+  size_t                elementsInBuffer_;
   // ecmc callback handle for use when deregister at unload
-  int                 callbackHandle_;
-  int                 dbgMode_;  //Allow dbg printouts
-  char*               dataSourceStr_;
+  int                   callbackHandle_;
+  int                   dbgMode_;  //Allow dbg printouts
+  int                   fftCalcDone_;
+  char*                 dataSourceStr_;
   // A unique object id for this fft (if plugin is more than once)
-  int                 objectId_;
-  static int          dataTypeSupported(ecmcEcDataType dt);
+  int                   objectId_;
+  static int            dataTypeSupported(ecmcEcDataType dt);
+  kissfft<double>*      fftDouble_;
 
   // Some utility functions
-  static uint8_t      getUint8(uint8_t* data);
-  static int8_t       getInt8(uint8_t* data);
-  static uint16_t     getUint16(uint8_t* data);
-  static int16_t      getInt16(uint8_t* data);
-  static uint32_t     getUint32(uint8_t* data);
-  static int32_t      getInt32(uint8_t* data);
-  static uint64_t     getUint64(uint8_t* data);
-  static int64_t      getInt64(uint8_t* data);
-  static float        getFloat32(uint8_t* data);
-  static double       getFloat64(uint8_t* data);
-  static size_t       getEcDataTypeByteSize(ecmcEcDataType dt);
-  static void         printData(uint8_t*       data, 
-                                size_t         size,
-                                ecmcEcDataType dt);
+  static uint8_t        getUint8(uint8_t* data);
+  static int8_t         getInt8(uint8_t* data);
+  static uint16_t       getUint16(uint8_t* data);
+  static int16_t        getInt16(uint8_t* data);
+  static uint32_t       getUint32(uint8_t* data);
+  static int32_t        getInt32(uint8_t* data);
+  static uint64_t       getUint64(uint8_t* data);
+  static int64_t        getInt64(uint8_t* data);
+  static float          getFloat32(uint8_t* data);
+  static double         getFloat64(uint8_t* data);
+  static size_t         getEcDataTypeByteSize(ecmcEcDataType dt);
+  static void           printData(uint8_t*       data, 
+                                  size_t         size,
+                                  ecmcEcDataType dt);
 };
 
 #endif  /* ECMC_FFT_H_ */
