@@ -172,8 +172,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   }
   
   if(dbgMode_) {
-    printf("fft id: %d, data: ",objectId_);
-    printData(data,size,dt);
+    printData(data, size, dt, objectId_);
 
     if(elementsInBuffer_ == nfft_) {
       printf("Buffer full (%zu elements appended).\n",elementsInBuffer_);
@@ -183,8 +182,12 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   if(elementsInBuffer_ >= nfft_) {
     //Buffer full
     if(!fftCalcDone_){
-      printf("################# calc fft ##################### %d\n",objectId_);
       calcFFT();
+      if(dbgMode_){
+        printResult(fftBuffer_,
+                    fftBufferSize_,
+                    objectId_);
+      }
       // Buffer new data
       clearBuffers();
     }
@@ -255,8 +258,10 @@ void ecmcFFT::calcFFT() {
 
 void ecmcFFT::printData(uint8_t*       data, 
                         size_t         size,
-                        ecmcEcDataType dt) {
-  
+                        ecmcEcDataType dt,
+                        int objId) {
+  printf("fft id: %d, data: ",objId);
+
   size_t dataElementSize = getEcDataTypeByteSize(dt);
 
   uint8_t *pData = data;
@@ -297,6 +302,15 @@ void ecmcFFT::printData(uint8_t*       data,
     }
     
     pData += dataElementSize;
+  }
+}
+
+void ecmcFFT::printResult(std::complex<double>* fftBuff,
+                          size_t elements,
+                          int objId) {
+  printf("fft id: %d, results: \n",objId);
+  for(unsigned int i = 0 ; i < elements ; ++i ) {
+    printf("%lf\n", std::abs(fftBuff[i]));
   }
 }
 

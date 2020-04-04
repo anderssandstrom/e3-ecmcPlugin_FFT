@@ -74,7 +74,11 @@ class ecmcFFT {
   static size_t         getEcDataTypeByteSize(ecmcEcDataType dt);
   static void           printData(uint8_t*       data, 
                                   size_t         size,
-                                  ecmcEcDataType dt);
+                                  ecmcEcDataType dt,
+                                  int objId);
+  static void           printResult(std::complex<double>* fftBuff,
+                                    size_t elements,
+                                    int objId);
 };
 
 #endif  /* ECMC_FFT_H_ */
