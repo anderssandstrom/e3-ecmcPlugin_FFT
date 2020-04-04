@@ -183,7 +183,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   if(elementsInBuffer_ >= nfft_) {
     //Buffer full
     if(!fftCalcDone_){
-      printf("################# calc fft #####################");
+      printf("################# calc fft ##################### %d\n",objectId_);
       calcFFT();
       // Buffer new data
       clearBuffers();
