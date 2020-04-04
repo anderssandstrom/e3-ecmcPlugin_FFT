@@ -14,43 +14,40 @@
 // Needed to get headers in ecmc right...
 #define ECMC_IS_PLUGIN
 
+#include <vector>
+#include <stdexcept>
 #include "ecmcFFTWrap.h"
 #include "ecmcFFT.h"
-#include "ecmcAsynPortDriver.h"
-#include "ecmcPluginClient.h"
+#include "ecmcFFTDefs.h"
 
-static ecmcFFT*            fft           = NULL;
-static ecmcDataItem*       dataItem      = NULL;
-static ecmcAsynPortDriver* ecmcAsynPort  = NULL;
-static int                 dbgModeOption = 0;
+static std::vector<ecmcFFT*>  ffts;
+static int                    fftObjCounter = 0;
 
-int createFFT(char* source, int dbgMode) {
-  dbgModeOption = dbgMode;
-  // Get ecmcDataItem for source
-  dataItem = (ecmcDataItem*)getEcmcDataItem(source);
-  if(!dataItem) {
-    PRINT_IF_DBG_MODE("%s/%s:%d: Error: dataItem=NULL (source %s not found) (0x%x).\n",
-                      __FILE__, __FUNCTION__, __LINE__, source,
-                       ECMC_PLUGIN_ERROR_DATA_SOURCE_NULL);
-    return ECMC_PLUGIN_ERROR_DATA_SOURCE_NULL;
-  }
-
-  // Get ecmcAsynPort
-  ecmcAsynPort = (ecmcAsynPortDriver*)getEcmcAsynPortDriver();
-  if(!ecmcAsynPort) {
-    PRINT_IF_DBG_MODE("%s/%s:%d: Error: ecmcAsynPort NULL (0x%x).\n",
-                      __FILE__, __FUNCTION__, __LINE__, ECMC_PLUGIN_ERROR_ASYNPORT_NULL);
-    return ECMC_PLUGIN_ERROR_ASYNPORT_NULL;
-  }
+int createFFT(char* configStr) {
 
   // create new ecmcFFT object
-  fft = new ecmcFFT(dataItem, ecmcAsynPort);
-  if(!fft) {
-    PRINT_IF_DBG_MODE("%s/%s:%d: Error: ecmcFFT NULL (0x%x).\n",
-                      __FILE__, __FUNCTION__, __LINE__, ECMC_PLUGIN_ERROR_FFT_NULL);
-    return ECMC_PLUGIN_ERROR_FFT_NULL;
-  }  
+  ecmcFFT* fft = NULL;
+  try {
+    fft = new ecmcFFT(fftObjCounter, configStr);
+  }
+  catch(std::exception& e) {
+    if(fft) {
+      delete fft;
+    }
+    printf("Exception: %s.",e.what());
+    return ECMC_PLUGIN_FFT_ERROR_CODE;
+  }
   
-  // Register callback
-  return fft->getErrorId();
+  ffts.push_back(fft);
+  fftObjCounter++;
+
+  return 0;
+}
+
+void deleteAllFFTs() {
+  for(std::vector<ecmcFFT*>::iterator pfft = ffts.begin(); pfft != ffts.end(); ++pfft) {
+    if(*pfft) {
+      delete *pfft;
+    }
+  }
 }

@@ -3,24 +3,22 @@
 * ecmc is distributed subject to a Software License Agreement found
 * in file LICENSE that is included with this distribution. 
 *
-*  ecmcFFTWrap.h
+*  ecmcFFTDefs.h
 *
 *  Created on: Mar 22, 2020
 *      Author: anderssandstrom
+*      Credits to  https://github.com/sgreg/dynamic-loading 
 *
 \*************************************************************************/
-#ifndef ECMC_FFT_WRAP_H_
-#define ECMC_FFT_WRAP_H_
 
-# ifdef __cplusplus
-extern "C" {
-# endif  // ifdef __cplusplus
+#ifndef ECMC_FFT_DEFS_H_
+#define ECMC_FFT_DEFS_H_
 
-int  createFFT(char *source);
-void deleteAllFFTs();
+// Options
+#define ECMC_PLUGIN_DBG_OPTION_CMD "DBG_PRINT="
+#define ECMC_PLUGIN_SOURCE_OPTION_CMD "SOURCE="
 
-# ifdef __cplusplus
-}
-# endif  // ifdef __cplusplus
+// Just one error code in "c" part of plugin
+#define ECMC_PLUGIN_FFT_ERROR_CODE 1
 
-#endif  /* ECMC_FFT_WRAP_H_ */
+#endif  /* ECMC_FFT_DEFS_H_ */

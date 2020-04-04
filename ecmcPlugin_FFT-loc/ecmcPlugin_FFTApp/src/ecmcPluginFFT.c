@@ -23,17 +23,11 @@ extern "C" {
 #include <string.h>
 
 #include "ecmcPluginDefs.h"
-#include "ecmcPluginClient.h"
+#include "ecmcFFTDefs.h"
 #include "ecmcFFTWrap.h"
 
-//Options
-#define ECMC_PLUGIN_DBG_OPTION_CMD "DBG_PRINT="
-#define ECMC_PLUGIN_SOURCE_OPTION_CMD "SOURCE="
-
 static int    lastEcmcError   = 0;
-static char*  confStr         = NULL;
-static int    dbgModeOption   = 0;
-static char*  source          = NULL;
+static char*  lastConfStr         = NULL;
 
 /** Optional. 
  *  Will be called once after successfull load into ecmc.
@@ -42,52 +36,9 @@ static char*  source          = NULL;
  **/
 int adv_exampleConstruct(char *configStr)
 {
-  PRINT_IF_DBG_MODE("%s/%s:%d: ConfigStr=\"%s\"...\n",__FILE__, __FUNCTION__, __LINE__,configStr);
-  // check config parameters
-  if (configStr && configStr[0]) {    
-    char *pOptions = strdup(configStr);
-    char *pThisOption = pOptions;
-    char *pNextOption = pOptions;
-    PRINT_IF_DBG_MODE("%s/%s:%d: Error: "ECMC_PLUGIN_SOURCE_OPTION_CMD"NULL.\n",
-                      __FILE__, __FUNCTION__, __LINE__);
-    while (pNextOption && pNextOption[0]) {
-      pNextOption = strchr(pNextOption, ';');
-      if (pNextOption) {
-        *pNextOption = '\0'; /* Terminate */
-        pNextOption++;       /* Jump to (possible) next */
-      }
-      
-      // ECMC_PLUGIN_DBG_OPTION_CMD
-      if (!strncmp(pThisOption, ECMC_PLUGIN_DBG_OPTION_CMD, strlen(ECMC_PLUGIN_DBG_OPTION_CMD))) {
-        pThisOption += strlen(ECMC_PLUGIN_DBG_OPTION_CMD);
-        dbgModeOption = atoi(pThisOption);
-      } 
-      
-      // ECMC_PLUGIN_SOURCE_OPTION_CMD
-      else if (!strncmp(pThisOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD))) {
-        pThisOption += strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD);
-        // get string to next ';'
-         source=strdup(pThisOption);
-      } 
-      pThisOption = pNextOption;
-    }    
-    free(pOptions);
-  }
-
-  //printout options
-  PRINT_IF_DBG_MODE("%s/%s:%d: %s%d, %s\"%s\"\n",__FILE__, 
-                    __FUNCTION__, __LINE__,ECMC_PLUGIN_DBG_OPTION_CMD,
-                    dbgModeOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, source);
-  
-  // Check that SOURCE are defined
-  if(!source) {
-    PRINT_IF_DBG_MODE("%s/%s:%d: Error: "ECMC_PLUGIN_SOURCE_OPTION_CMD"NULL (0x%x).\n",
-                      __FILE__, __FUNCTION__, __LINE__, ECMC_PLUGIN_ERROR_NO_SOURCE);
-    return ECMC_PLUGIN_ERROR_NO_SOURCE;
-  }
-
   // create FFT object and register data callback
-  return createFFT(source, dbgModeOption);
+  lastConfStr = strdup(configStr);
+  return createFFT(configStr);
 }
 
 /** Optional function.
@@ -95,14 +46,9 @@ int adv_exampleConstruct(char *configStr)
  **/
 void adv_exampleDestruct(void)
 {
-  PRINT_IF_DBG_MODE("%s/%s:%d...\n",__FILE__, __FUNCTION__, __LINE__);
-  
-  if(source) {
-    free(source);
-  }
-
-  if(confStr){
-    free(confStr);
+  deleteAllFFTs();
+  if(lastConfStr){
+    free(lastConfStr);
   }
 }
 
@@ -131,7 +77,6 @@ int adv_exampleEnterRT(){
  *  Return value other than 0 will be considered error.
  **/
 int adv_exampleExitRT(void){
-  PRINT_IF_DBG_MODE("%s/%s:%d...\n",__FILE__, __FUNCTION__, __LINE__);
   return 0;
 }
 
