@@ -26,21 +26,22 @@ class ecmcFFT {
    *    - bad_alloc
    *    - invalid_argument
    *    - runtime_error
+   *    - out_of_range
   */
   ecmcFFT(int   fftIndex,    // index of this object  
           char* configStr);
   ~ecmcFFT();  
 
-  // Add data to buffer
-  void dataUpdatedCallback(uint8_t* data, 
-                           size_t size,
-                           ecmcEcDataType dt);
+  // Add data to buffer (called from "external" callback)
+  void                  dataUpdatedCallback(uint8_t* data, 
+                                            size_t size,
+                                            ecmcEcDataType dt);
  private:
-  void  parseConfigStr(char *configStr);
-  void  connectToDataSource();
-  void  clearBuffers();
-  void  calcFFT();
-  void  addDataToBuffer(double data);
+  void                  parseConfigStr(char *configStr);
+  void                  connectToDataSource();
+  void                  clearBuffers();
+  void                  calcFFT();
+  void                  addDataToBuffer(double data);
 
   static int            dataTypeSupported(ecmcEcDataType dt);
 
