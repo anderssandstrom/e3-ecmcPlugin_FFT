@@ -134,28 +134,24 @@ void ecmcFFT::parseConfigStr(char *configStr) {
       // ECMC_PLUGIN_SOURCE_OPTION_CMD
       else if (!strncmp(pThisOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD);
-        // get string to next ';'
         cfgDataSourceStr_=strdup(pThisOption);
       }
 
       // ECMC_PLUGIN_NFFT_OPTION_CMD
       else if (!strncmp(pThisOption, ECMC_PLUGIN_NFFT_OPTION_CMD, strlen(ECMC_PLUGIN_NFFT_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_NFFT_OPTION_CMD);
-        // get string to next ';'
         cfgNfft_ = atoi(pThisOption);
       }
 
       // ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD
       else if (!strncmp(pThisOption, ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD, strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD);
-        // get string to next ';'
         cfgApplyScale_ = atoi(pThisOption);
       }
 
       // ECMC_PLUGIN_DC_REMOVE_OPTION_CMD
       else if (!strncmp(pThisOption, ECMC_PLUGIN_DC_REMOVE_OPTION_CMD, strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD);
-        // get string to next ';'
         cfgDcRemove_ = atoi(pThisOption);
       }
       pThisOption = pNextOption;
@@ -163,7 +159,7 @@ void ecmcFFT::parseConfigStr(char *configStr) {
     free(pOptions);
   }
 
-  // Data source must be defined
+  // Data source must be defined...
   if(!cfgDataSourceStr_) { 
     throw std::invalid_argument( "Data source not defined.");
   }
@@ -173,7 +169,7 @@ void ecmcFFT::connectToDataSource() {
   // Get dataItem
   dataItem_        = (ecmcDataItem*) getEcmcDataItem(cfgDataSourceStr_);
   if(!dataItem_) {
-    throw std::runtime_error("Data item NULL.");
+    throw std::runtime_error( "Data item NULL." );
   }
 
   // Register data callback
@@ -184,7 +180,7 @@ void ecmcFFT::connectToDataSource() {
 
   // Check data source
   if( !dataTypeSupported(dataItem_->getEcmcDataType()) ) {
-    throw std::invalid_argument( "Data type not supported.");
+    throw std::invalid_argument( "Data type not supported." );
   }
 }
 
@@ -212,6 +208,10 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
         printComplexArray(fftBuffer_,
                     cfgNfft_,
                     objectId_);
+        printEcDataArray((uint8_t*)dataBuffer_,
+                          cfgNfft_*sizeof(double),
+                          ECMC_EC_F64,
+                          objectId_);
       }
       // Buffer new data
       clearBuffers();
@@ -243,7 +243,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
         addDataToBuffer((double)getInt32(pData));
         break;
       case ECMC_EC_U64:
-        addDataToBuffer((double)getInt64(pData));
+        addDataToBuffer((double)getUint64(pData));
         break;
       case ECMC_EC_S64:
         addDataToBuffer((double)getInt64(pData));
@@ -263,7 +263,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 }
 
 void ecmcFFT::addDataToBuffer(double data) {
-  if(dataBuffer_ && elementsInBuffer_ < cfgNfft_) {
+  if(dataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
     if(cfgApplyScale_) {
       dataBuffer_[elementsInBuffer_] = data*scale_;
     } else {
@@ -275,20 +275,20 @@ void ecmcFFT::addDataToBuffer(double data) {
 
 void ecmcFFT::clearBuffers() {
   memset(dataBuffer_, 0, cfgNfft_ * sizeof(double));
-  memset(fftBuffer_, 0, cfgNfft_ * sizeof(std::complex<double>));
+  memset(fftBuffer_,  0, cfgNfft_ * sizeof(std::complex<double>));
   elementsInBuffer_ = 0;
-  fftCalcDone_ = 0;
+  fftCalcDone_      = 0;
 }
 
 void ecmcFFT::calcFFT() {
-  fftDouble_->transform_real(dataBuffer_,fftBuffer_);
+  fftDouble_->transform_real(dataBuffer_, fftBuffer_);
   fftCalcDone_ = 1;
 }
 
 void ecmcFFT::printEcDataArray(uint8_t*       data, 
-                        size_t         size,
-                        ecmcEcDataType dt,
-                        int objId) {
+                               size_t         size,
+                               ecmcEcDataType dt,
+                               int objId) {
   printf("fft id: %d, data: ",objId);
 
   size_t dataElementSize = getEcDataTypeByteSize(dt);
