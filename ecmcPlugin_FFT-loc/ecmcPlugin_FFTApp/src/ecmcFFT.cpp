@@ -21,7 +21,7 @@
 
 #define PRINT_IF_DBG_MODE(fmt, ...)        \
    {                                       \
-     if(dbgMode_){                         \
+     if(cfgDbgMode_){                         \
        printf(fmt, ## __VA_ARGS__);        \
      }                                     \
    }                                       \
@@ -52,36 +52,46 @@ void f_dataUpdatedCallback(uint8_t* data, size_t size, ecmcEcDataType dt, void* 
  *    - invalid_argument
  *    - runtime_error
 */
-ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object
+ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is created)
                  char* configStr) {
-  dataSourceStr_    = NULL;
+  cfgDataSourceStr_ = NULL;
   dataBuffer_       = NULL;
   dataItem_         = NULL;
   fftDouble_        = NULL;
   asynPort_         = NULL;
   elementsInBuffer_ = 0;
-  dbgMode_          = 0;
   fftCalcDone_      = 0;
   callbackHandle_   = -1;
   objectId_         = fftIndex;
-  nfft_             = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
+  scale_            = 1.0;
+  // Config defaults
+  cfgDbgMode_       = 0;
+  cfgNfft_          = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
+  cfgDcRemove_      = 0;
+  cfgApplyScale_    = 1;   // Scale as default to get correct amplitude in fft
+
   asynPort_         = (ecmcAsynPortDriver*) getEcmcAsynPortDriver();
   if(!asynPort_) {
     throw std::runtime_error("Asyn port NULL");
   }
 
-  parseConfigStr(configStr); // Assigns Configs
+  parseConfigStr(configStr); // Assigns all configs
+  // Check valid nfft
+  if(cfgNfft_ <= 0) {
+    throw std::out_of_range("NFFT must be > 0 and even N^2.");
+  }
+  // set scale factor
+  scale_ = 1.0 / (double)cfgNfft_;
+
   connectToDataSource();     // Also assigns dataItem_
 
   // Allocate buffers
-  dataBufferSize_  = nfft_ * sizeof(double);
-  dataBuffer_      = new double[dataBufferSize_];
-  fftBufferSize_   = (nfft_ * sizeof(double)) / 2 + 1;
-  fftBuffer_       = new std::complex<double>[fftBufferSize_];
+  dataBuffer_      = new double[cfgNfft_];
+  fftBuffer_       = new std::complex<double>[cfgNfft_];
   clearBuffers();
 
   // Allocate KissFFT
-  fftDouble_ = new kissfft<double>(nfft_,false);
+  fftDouble_ = new kissfft<double>(cfgNfft_,false);
 }
 
 ecmcFFT::~ecmcFFT() {
@@ -92,8 +102,8 @@ ecmcFFT::~ecmcFFT() {
   if(callbackHandle_ >= 0) {
     dataItem_->deregDataUpdatedCallback(callbackHandle_);
   }
-  if(dataSourceStr_) {
-    free(dataSourceStr_);
+  if(cfgDataSourceStr_) {
+    free(cfgDataSourceStr_);
   }
   if(fftDouble_) {
     delete fftDouble_;
@@ -118,34 +128,50 @@ void ecmcFFT::parseConfigStr(char *configStr) {
       // ECMC_PLUGIN_DBG_OPTION_CMD
       if (!strncmp(pThisOption, ECMC_PLUGIN_DBG_OPTION_CMD, strlen(ECMC_PLUGIN_DBG_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_DBG_OPTION_CMD);
-        dbgMode_ = atoi(pThisOption);
+        cfgDbgMode_ = atoi(pThisOption);
       } 
       
       // ECMC_PLUGIN_SOURCE_OPTION_CMD
       else if (!strncmp(pThisOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD);
         // get string to next ';'
-        dataSourceStr_=strdup(pThisOption);
+        cfgDataSourceStr_=strdup(pThisOption);
       }
 
       // ECMC_PLUGIN_NFFT_OPTION_CMD
       else if (!strncmp(pThisOption, ECMC_PLUGIN_NFFT_OPTION_CMD, strlen(ECMC_PLUGIN_NFFT_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_NFFT_OPTION_CMD);
         // get string to next ';'
-        nfft_ = atoi(pThisOption);
+        cfgNfft_ = atoi(pThisOption);
+      }
+
+      // ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD, strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD);
+        // get string to next ';'
+        cfgApplyScale_ = atoi(pThisOption);
+      }
+
+      // ECMC_PLUGIN_DC_REMOVE_OPTION_CMD
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_DC_REMOVE_OPTION_CMD, strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD);
+        // get string to next ';'
+        cfgDcRemove_ = atoi(pThisOption);
       }
       pThisOption = pNextOption;
     }    
     free(pOptions);
   }
-  if(!dataSourceStr_) { 
+
+  // Data source must be defined
+  if(!cfgDataSourceStr_) { 
     throw std::invalid_argument( "Data source not defined.");
   }
 }
 
 void ecmcFFT::connectToDataSource() {
   // Get dataItem
-  dataItem_        = (ecmcDataItem*) getEcmcDataItem(dataSourceStr_);
+  dataItem_        = (ecmcDataItem*) getEcmcDataItem(cfgDataSourceStr_);
   if(!dataItem_) {
     throw std::runtime_error("Data item NULL.");
   }
@@ -153,7 +179,6 @@ void ecmcFFT::connectToDataSource() {
   // Register data callback
   callbackHandle_ = dataItem_->regDataUpdatedCallback(f_dataUpdatedCallback, this);
   if (callbackHandle_ < 0) {
-    callbackHandle_ = -1;
     throw std::runtime_error( "Failed to register data source callback.");
   }
 
@@ -171,21 +196,21 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     return;
   }
   
-  if(dbgMode_) {
-    printData(data, size, dt, objectId_);
+  if(cfgDbgMode_) {
+    printEcDataArray(data, size, dt, objectId_);
 
-    if(elementsInBuffer_ == nfft_) {
+    if(elementsInBuffer_ == cfgNfft_) {
       printf("Buffer full (%zu elements appended).\n",elementsInBuffer_);
     }
   }
   
-  if(elementsInBuffer_ >= nfft_) {
+  if(elementsInBuffer_ >= cfgNfft_) {
     //Buffer full
     if(!fftCalcDone_){
       calcFFT();
-      if(dbgMode_){
-        printResult(fftBuffer_,
-                    fftBufferSize_,
+      if(cfgDbgMode_){
+        printComplexArray(fftBuffer_,
+                    cfgNfft_,
                     objectId_);
       }
       // Buffer new data
@@ -238,16 +263,20 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 }
 
 void ecmcFFT::addDataToBuffer(double data) {
-  if(dataBuffer_ && elementsInBuffer_ < nfft_) {
-    dataBuffer_[elementsInBuffer_] = data;
+  if(dataBuffer_ && elementsInBuffer_ < cfgNfft_) {
+    if(cfgApplyScale_) {
+      dataBuffer_[elementsInBuffer_] = data*scale_;
+    } else {
+      dataBuffer_[elementsInBuffer_] = data;
+    }
   }
   elementsInBuffer_ ++;
 }
 
 void ecmcFFT::clearBuffers() {
-  memset(dataBuffer_, 0, dataBufferSize_);
+  memset(dataBuffer_, 0, cfgNfft_ * sizeof(double));
+  memset(fftBuffer_, 0, cfgNfft_ * sizeof(std::complex<double>));
   elementsInBuffer_ = 0;
-  memset(fftBuffer_, 0, fftBufferSize_);
   fftCalcDone_ = 0;
 }
 
@@ -256,7 +285,7 @@ void ecmcFFT::calcFFT() {
   fftCalcDone_ = 1;
 }
 
-void ecmcFFT::printData(uint8_t*       data, 
+void ecmcFFT::printEcDataArray(uint8_t*       data, 
                         size_t         size,
                         ecmcEcDataType dt,
                         int objId) {
@@ -305,7 +334,7 @@ void ecmcFFT::printData(uint8_t*       data,
   }
 }
 
-void ecmcFFT::printResult(std::complex<double>* fftBuff,
+void ecmcFFT::printComplexArray(std::complex<double>* fftBuff,
                           size_t elements,
                           int objId) {
   printf("fft id: %d, results: \n",objId);

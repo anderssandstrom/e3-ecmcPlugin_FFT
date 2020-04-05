@@ -42,25 +42,28 @@ class ecmcFFT {
   void  calcFFT();
   void  addDataToBuffer(double data);
 
+  static int            dataTypeSupported(ecmcEcDataType dt);
+
   ecmcDataItem         *dataItem_;
   ecmcAsynPortDriver   *asynPort_;
+  kissfft<double>*      fftDouble_;
   double*               dataBuffer_;
-  size_t                dataBufferSize_;
   std::complex<double>* fftBuffer_; // Result
-  size_t                fftBufferSize_;
-  size_t                nfft_;
   size_t                elementsInBuffer_;
   // ecmc callback handle for use when deregister at unload
   int                   callbackHandle_;
-  int                   dbgMode_;  //Allow dbg printouts
   int                   fftCalcDone_;
-  char*                 dataSourceStr_;
-  // A unique object id for this fft (if plugin is more than once)
-  int                   objectId_;
-  static int            dataTypeSupported(ecmcEcDataType dt);
-  kissfft<double>*      fftDouble_;
+  int                   objectId_;         // Unique object id
+  double                scale_;            // Config: Data set size  
 
-  // Some utility functions
+  // Config options
+  char*                 cfgDataSourceStr_; // Config: data source string
+  int                   cfgDbgMode_;       // Config: allow dbg printouts
+  int                   cfgApplyScale_;    // Config: apply scale 1/nfft
+  int                   cfgDcRemove_;      // Config: remove dc (average) 
+  size_t                cfgNfft_;          // Config: Data set size  
+
+  // Some generic utility functions
   static uint8_t        getUint8(uint8_t* data);
   static int8_t         getInt8(uint8_t* data);
   static uint16_t       getUint16(uint8_t* data);
@@ -72,13 +75,13 @@ class ecmcFFT {
   static float          getFloat32(uint8_t* data);
   static double         getFloat64(uint8_t* data);
   static size_t         getEcDataTypeByteSize(ecmcEcDataType dt);
-  static void           printData(uint8_t*       data, 
-                                  size_t         size,
-                                  ecmcEcDataType dt,
-                                  int objId);
-  static void           printResult(std::complex<double>* fftBuff,
-                                    size_t elements,
-                                    int objId);
+  static void           printEcDataArray(uint8_t*       data, 
+                                         size_t         size,
+                                         ecmcEcDataType dt,
+                                         int objId);
+  static void           printComplexArray(std::complex<double>* fftBuff,
+                                          size_t elements,
+                                          int objId);
 };
 
 #endif  /* ECMC_FFT_H_ */
