@@ -15,7 +15,9 @@
 #include <stdexcept>
 #include "ecmcDataItem.h"
 #include "ecmcAsynPortDriver.h"
+#include "ecmcFFTDefs.h"
 #include "inttypes.h"
+#include <string>
 #include "kissfft/kissfft.hh"
 
 class ecmcFFT {
@@ -39,7 +41,9 @@ class ecmcFFT {
   // Call just before realtime because then all data sources should be available
   void                  connectToDataSource();
   void                  setEnable(int enable);
+  void                  setModeFFT(FFT_MODE mode);
   void                  clearBuffers();
+  void                  triggFFT();
 
  private:
   void                  parseConfigStr(char *configStr);
@@ -61,6 +65,7 @@ class ecmcFFT {
   int                   callbackHandle_;
   int                   fftCalcDone_;
   int                   objectId_;         // Unique object id
+  int                   triggOnce_;
   double                scale_;            // Config: Data set size  
 
   // Config options
@@ -70,12 +75,13 @@ class ecmcFFT {
   int                   cfgDcRemove_;      // Config: remove dc (average) 
   size_t                cfgNfft_;          // Config: Data set size
   int                   cfgEnable_;        // Config: Enable data acq./calc.
+  FFT_MODE              cfgMode_;          // Config: Mode continous or triggered.
 
   // Asyn
-  ecmcAsynDataItem*     asynEnable_;
+  ecmcAsynDataItem*     asynEnable_;       // Enable/disable acq./calcs
   ecmcAsynDataItem*     asynRawData_;      // Raw data (input) array (double)
   ecmcAsynDataItem*     asynFFTAmp_;       // FFT amplitude array (double)
-  
+  ecmcAsynDataItem*     asynFFTMode_;      // FFT mode cont/trigg
 
   // Some generic utility functions
   static uint8_t        getUint8(uint8_t* data);
@@ -96,6 +102,7 @@ class ecmcFFT {
   static void           printComplexArray(std::complex<double>* fftBuff,
                                           size_t elements,
                                           int objId);
+  static std::string    to_string(int value);
 };
 
 #endif  /* ECMC_FFT_H_ */

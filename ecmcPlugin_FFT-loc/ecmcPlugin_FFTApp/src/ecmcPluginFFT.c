@@ -34,7 +34,7 @@ static char*  lastConfStr         = NULL;
  *  Return value other than 0 will be considered error.
  *  configStr can be used for configuration parameters.
  **/
-int fft_exampleConstruct(char *configStr)
+int fftConstruct(char *configStr)
 {
   //This module is allowed to load several times so no need to check if loaded
 
@@ -46,7 +46,7 @@ int fft_exampleConstruct(char *configStr)
 /** Optional function.
  *  Will be called once at unload.
  **/
-void fft_exampleDestruct(void)
+void fftDestruct(void)
 {
   deleteAllFFTs();
   if(lastConfStr){
@@ -60,7 +60,7 @@ void fft_exampleDestruct(void)
  *  this plugin to react on ecmc errors
  *  Return value other than 0 will be considered to be an error code in ecmc.
  **/
-int fft_exampleRealtime(int ecmcError)
+int fftRealtime(int ecmcError)
 {  
   lastEcmcError = ecmcError;
   return 0;
@@ -68,7 +68,7 @@ int fft_exampleRealtime(int ecmcError)
 
 /** Link to data source here since all sources should be availabe at this stage
  **/
-int fft_exampleEnterRT(){
+int fftEnterRT(){
   return linkDataToFFTs();
 }
 
@@ -76,7 +76,7 @@ int fft_exampleEnterRT(){
  *  Will be called once just before leaving realtime mode
  *  Return value other than 0 will be considered error.
  **/
-int fft_exampleExitRT(void){
+int fftExitRT(void){
   return 0;
 }
 
@@ -90,6 +90,16 @@ double fft_enable(double index, double enable) {
   return (double)enableFFT((int)index, (int)enable);
 }
 
+// Plc function for trigg new measurement
+double fft_trigg(double index) {
+  return (double)triggFFT((int)index);
+}
+
+// Plc function for enable
+double fft_mode(double index, double mode) {
+  return (double)setModeFFT((int)index, (FFT_MODE)mode);
+}
+
 // Register data for plugin so ecmc know what to use
 struct ecmcPluginData pluginDataDef = {
   // Allways use ECMC_PLUG_VERSION_MAGIC
@@ -99,12 +109,14 @@ struct ecmcPluginData pluginDataDef = {
   // Description
   .desc = "FFT plugin for use with ecmc.",
   // Option description
-  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"1/0 : Enables/disables printouts from plugin.\n"
+  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"<1/0> : Enables/disables printouts from plugin.\n"
                 "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source> : Sets source variable for FFT (example: ec0.s1.AI_1).\n"
                 "    "ECMC_PLUGIN_NFFT_OPTION_CMD"<nfft> : Data points to collect.\n" 
                 "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0> : Apply scale.\n" 
                 "    "ECMC_PLUGIN_DC_REMOVE_OPTION_CMD"<1/0> : Remove DC offset of input data (SOURCE).\n" 
-                "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0> : Enable data acq. and calcs (can be controlled over asyn).", 
+                "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0> : Enable data acq. and calcs (can be controlled over asyn)."
+                "    "ECMC_PLUGIN_MODE_OPTION_CMD"<CONT/TRIGG> : Continious or triggered mode."
+                , 
   // Plugin version
   .version = ECMC_EXAMPLE_PLUGIN_VERSION,
   // Optional construct func, called once at load. NULL if not definded.
@@ -119,7 +131,7 @@ struct ecmcPluginData pluginDataDef = {
   .realtimeExitFnc = fft_exampleExitRT,
   // PLC funcs
   .funcs[0] =
-      { /*----customPlcFunc2----*/
+      { /*----fft_clear----*/
         // Function name (this is the name you use in ecmc plc-code)
         .funcName = "fft_clear",
         // Function description
@@ -141,7 +153,7 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg10 = NULL,        
       },
   .funcs[1] =
-      { /*----customPlcFunc2----*/
+      { /*----fft_enable----*/
         // Function name (this is the name you use in ecmc plc-code)
         .funcName = "fft_enable",
         // Function description
@@ -162,9 +174,65 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg9 = NULL,
         .funcArg10 = NULL,        
       },
-  .funcs[2] = {0},  // last element set all to zero..
+    .funcs[2] =
+      { /*----fft_trigg----*/
+        // Function name (this is the name you use in ecmc plc-code)
+        .funcName = "fft_trigg",
+        // Function description
+        .funcDesc = "double fft_trigg(index) : Trigg new measurement for fft[index].",
+        /**
+        * 7 different prototypes allowed (only doubles since reg in plc).
+        * Only funcArg${argCount} func shall be assigned the rest set to NULL.
+        **/
+        .funcArg0 = NULL,
+        .funcArg1 = fft_trigg,
+        .funcArg2 = NULL,
+        .funcArg3 = NULL,
+        .funcArg4 = NULL,
+        .funcArg5 = NULL,
+        .funcArg6 = NULL,
+        .funcArg7 = NULL,
+        .funcArg8 = NULL,
+        .funcArg9 = NULL,
+        .funcArg10 = NULL,        
+      },
+    .funcs[3] =
+      { /*----fft_mode----*/
+        // Function name (this is the name you use in ecmc plc-code)
+        .funcName = "fft_mode",
+        // Function description
+        .funcDesc = "double fft_mode(index, mode) : Set mode Cont(1)/Trigg(2) for fft[index].",
+        /**
+        * 7 different prototypes allowed (only doubles since reg in plc).
+        * Only funcArg${argCount} func shall be assigned the rest set to NULL.
+        **/
+        .funcArg0 = NULL,
+        .funcArg1 = NULL,
+        .funcArg2 = fft_trigg,
+        .funcArg3 = NULL,
+        .funcArg4 = NULL,
+        .funcArg5 = NULL,
+        .funcArg6 = NULL,
+        .funcArg7 = NULL,
+        .funcArg8 = NULL,
+        .funcArg9 = NULL,
+        .funcArg10 = NULL,        
+      },
+  .funcs[4] = {0},  // last element set all to zero..
   // PLC consts
-  .consts[0] = {0}, // last element set all to zero..
+  /* CONTINIOUS MODE = 1 */
+  .consts[0] = {
+        .constName = "fft_MODE_CONT",
+        .constDesc = "Continious mode",
+        .constValue = CONT
+      },
+  /* TRIGGERED MODE = 2 */
+  .consts[1] = {
+        .constName = "fft_MODE_TRIGG",
+        .constDesc = "Triggered mode",
+        .constValue = TRIGG
+      },
+  .consts[2] = {0}, // last element set all to zero..
 };
 
 ecmc_plugin_register(pluginDataDef);

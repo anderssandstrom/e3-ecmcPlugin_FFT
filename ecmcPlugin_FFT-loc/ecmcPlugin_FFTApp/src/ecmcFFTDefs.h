@@ -21,6 +21,16 @@
 #define ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD "APPLY_SCALE="
 #define ECMC_PLUGIN_DC_REMOVE_OPTION_CMD   "DC_REMOVE="
 #define ECMC_PLUGIN_ENABLE_OPTION_CMD      "ENABLE="
+// CONT, TRIGG
+#define ECMC_PLUGIN_MODE_OPTION_CMD        "MODE="
+#define ECMC_PLUGIN_MODE_CONT_OPTION       "CONT"
+#define ECMC_PLUGIN_MODE_TRIGG_OPTION      "TRIGG"
+
+enum FFT_MODE{
+  NO_MODE = 0,
+  CONT    = 1,
+  TRIGG   = 2,
+};
 
 /** Just one error code in "c" part of plugin 
 (error handled with exceptions i c++ part) */

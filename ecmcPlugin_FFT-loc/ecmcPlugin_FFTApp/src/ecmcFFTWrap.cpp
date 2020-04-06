@@ -88,3 +88,25 @@ int clearFFT(int fftIndex) {
   }  
   return 0;
 }
+
+int  triggFFT(int fftIndex) {
+  try {
+    ffts.at(fftIndex)->triggFFT();
+  }
+  catch(std::exception& e) {
+    printf("Exception: %s. FFT index out of range.\n",e.what());
+    return ECMC_PLUGIN_FFT_ERROR_CODE;
+  }  
+  return 0;
+}
+
+int  setModeFFT(int fftIndex, FFT_MODE mode) {
+  try {
+    ffts.at(fftIndex)->setMode(mode);
+  }
+  catch(std::exception& e) {
+    printf("Exception: %s. FFT index out of range.\n",e.what());
+    return ECMC_PLUGIN_FFT_ERROR_CODE;
+  }  
+  return 0;
+}

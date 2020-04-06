@@ -11,6 +11,7 @@
 \*************************************************************************/
 #ifndef ECMC_FFT_WRAP_H_
 #define ECMC_FFT_WRAP_H_
+#include "ecmcFFTDefs.h"
 
 # ifdef __cplusplus
 extern "C" {
@@ -21,7 +22,8 @@ int  linkDataToFFTs();
 void deleteAllFFTs();
 int  enableFFT(int fftIndex, int enable);
 int  clearFFT(int fftIndex);
-
+int  triggFFT(int fftIndex);
+int  setModeFFT(int fftIndex, FFT_MODE mode);
 # ifdef __cplusplus
 }
 # endif  // ifdef __cplusplus

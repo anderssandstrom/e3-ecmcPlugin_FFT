@@ -14,14 +14,14 @@
 // Needed to get headers in ecmc right...
 #define ECMC_IS_PLUGIN
 
-#define ECMC_PLUGIN_ASYN_PREFIX  "plugin.fft"
-#define ECMC_PLUGIN_ASYN_ENABLE  "enable"
-#define ECMC_PLUGIN_ASYN_RAWDATA "rawdata"
-#define ECMC_PLUGIN_ASYN_FFT_AMP "fftamplitude"
+#define ECMC_PLUGIN_ASYN_PREFIX   "plugin.fft"
+#define ECMC_PLUGIN_ASYN_ENABLE   "enable"
+#define ECMC_PLUGIN_ASYN_RAWDATA  "rawdata"
+#define ECMC_PLUGIN_ASYN_FFT_AMP  "fftamplitude"
+#define ECMC_PLUGIN_ASYN_FFT_MODE "mode"
 
-#include <string>
+#include <sstream>
 #include "ecmcFFT.h"
-#include "ecmcFFTDefs.h"
 #include "ecmcPluginClient.h"
 #include "ecmcAsynPortDriver.h"
 
@@ -73,12 +73,15 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   callbackHandle_   = -1;
   objectId_         = fftIndex;
   scale_            = 1.0;
+  triggOnce_        = 0;
   // Config defaults
   cfgDbgMode_       = 0;
   cfgNfft_          = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
   cfgDcRemove_      = 0;
   cfgApplyScale_    = 1;   // Scale as default to get correct amplitude in fft
   cfgEnable_        = 0;   // start disabled (enable over asyn)
+  cfgMode_          = TRIGG;
+
   asynPort_         = (ecmcAsynPortDriver*) getEcmcAsynPortDriver();
   if(!asynPort_) {
     throw std::runtime_error("Asyn port NULL");
@@ -135,40 +138,51 @@ void ecmcFFT::parseConfigStr(char *configStr) {
         pNextOption++;       /* Jump to (possible) next */
       }
       
-      // ECMC_PLUGIN_DBG_OPTION_CMD
+      // ECMC_PLUGIN_DBG_OPTION_CMD (1/0)
       if (!strncmp(pThisOption, ECMC_PLUGIN_DBG_OPTION_CMD, strlen(ECMC_PLUGIN_DBG_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_DBG_OPTION_CMD);
         cfgDbgMode_ = atoi(pThisOption);
       } 
       
-      // ECMC_PLUGIN_SOURCE_OPTION_CMD
+      // ECMC_PLUGIN_SOURCE_OPTION_CMD (Source string)
       else if (!strncmp(pThisOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD);
         cfgDataSourceStr_=strdup(pThisOption);
       }
 
-      // ECMC_PLUGIN_NFFT_OPTION_CMD
+      // ECMC_PLUGIN_NFFT_OPTION_CMD (1/0)
       else if (!strncmp(pThisOption, ECMC_PLUGIN_NFFT_OPTION_CMD, strlen(ECMC_PLUGIN_NFFT_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_NFFT_OPTION_CMD);
         cfgNfft_ = atoi(pThisOption);
       }
 
-      // ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD
+      // ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD (1/0)
       else if (!strncmp(pThisOption, ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD, strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD);
         cfgApplyScale_ = atoi(pThisOption);
       }
 
-      // ECMC_PLUGIN_DC_REMOVE_OPTION_CMD
+      // ECMC_PLUGIN_DC_REMOVE_OPTION_CMD (1/0)
       else if (!strncmp(pThisOption, ECMC_PLUGIN_DC_REMOVE_OPTION_CMD, strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD);
         cfgDcRemove_ = atoi(pThisOption);
       }
 
-      // ECMC_PLUGIN_ENABLE_OPTION_CMD
+      // ECMC_PLUGIN_ENABLE_OPTION_CMD (1/0)
       else if (!strncmp(pThisOption, ECMC_PLUGIN_ENABLE_OPTION_CMD, strlen(ECMC_PLUGIN_ENABLE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_ENABLE_OPTION_CMD);
         cfgEnable_ = atoi(pThisOption);
+      }
+
+      // ECMC_PLUGIN_MODE_OPTION_CMD CONT/TRIGG
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_MODE_OPTION_CMD, strlen(ECMC_PLUGIN_MODE_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_MODE_OPTION_CMD);
+        if(!strncmp(pThisOption, ECMC_PLUGIN_MODE_CONT_OPTION,strlen(ECMC_PLUGIN_MODE_CONT_OPTION))){
+          cfgMode_ = CONT;
+        }
+        if(!strncmp(pThisOption, ECMC_PLUGIN_MODE_TRIGG_OPTION,strlen(ECMC_PLUGIN_MODE_TRIGG_OPTION))){
+          cfgMode_ = TRIGG;
+        }
       }
 
       pThisOption = pNextOption;
@@ -208,7 +222,10 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   if(!dataBuffer_ || !cfgEnable_) {
     return;
   }
-  
+  if (cfgMode_ == TRIGG && !triggOnce_ ) {
+    return; // Wait for trigger from plc or asyn
+  }
+
   if(cfgDbgMode_) {
     printEcDataArray(data, size, dt, objectId_);
 
@@ -298,7 +315,8 @@ void ecmcFFT::clearBuffers() {
   memset(dataBuffer_,   0, cfgNfft_ * sizeof(double));
   memset(fftBufferAmp_, 0, cfgNfft_ * sizeof(double));
   for(unsigned int i = 0; i < cfgNfft_; ++i) {
-    fftBuffer_[i] = {0,0};
+    fftBuffer_[i].real(0);
+    fftBuffer_[i].imag(0);
   }
   elementsInBuffer_ = 0;
   fftCalcDone_      = 0;
@@ -535,8 +553,8 @@ void ecmcFFT::initAsyn() {
   }
   
   // Add enable "plugin.fft%d.enable"
-  std::string paramName = ECMC_PLUGIN_ASYN_PREFIX + std::to_string(objectId_) +
-              "." + ECMC_PLUGIN_ASYN_ENABLE;
+  std::string paramName =ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
+             "." + ECMC_PLUGIN_ASYN_ENABLE;
   asynEnable_ = asynPort_->addNewAvailParam(paramName.c_str(),  // name
                                             asynParamInt32,       // asyn type 
                                             (uint8_t *)&(cfgEnable_),// pointer to data
@@ -551,7 +569,7 @@ void ecmcFFT::initAsyn() {
   asynEnable_->refreshParam(1); // read once into asyn param lib
 
   // Add rawdata "plugin.fft%d.rawdata"
-  paramName =ECMC_PLUGIN_ASYN_PREFIX + std::to_string(objectId_) + 
+  paramName =ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_RAWDATA;
   
   asynRawData_ = asynPort_->addNewAvailParam(paramName.c_str(),      // name
@@ -568,25 +586,58 @@ void ecmcFFT::initAsyn() {
   asynRawData_->refreshParam(1); // read once into asyn param lib
   
   // Add fft amplitude "plugin.fft%d.fftamplitude"
-  paramName = ECMC_PLUGIN_ASYN_PREFIX + std::to_string(objectId_) + 
+  paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_AMP;
   
-  asynFFTAmp_ = asynPort_->addNewAvailParam(paramName.c_str(),      // name
-                                            asynParamFloat64Array,   // asyn type 
-                                            (uint8_t *)fftBufferAmp_,  // pointer to data
-                                            cfgNfft_*sizeof(double), // size of data
-                                            ECMC_EC_F64,             // ecmc data type
-                                            0);                      // die if fail
+  asynFFTAmp_ = asynPort_->addNewAvailParam(paramName.c_str(),        // name
+                                            asynParamFloat64Array,    // asyn type 
+                                            (uint8_t *)fftBufferAmp_, // pointer to data
+                                            cfgNfft_*sizeof(double),  // size of data
+                                            ECMC_EC_F64,              // ecmc data type
+                                            0);                       // die if fail
 
   if(!asynFFTAmp_) {
     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
   }
 
   asynFFTAmp_->setAllowWriteToEcmc(false);
-  asynFFTAmp_->refreshParam(1); // read once into asyn param lib  
+  asynFFTAmp_->refreshParam(1); // read once into asyn param lib
+
+  // Add fft mode "plugin.fft%d.mode"
+  paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
+             "." + ECMC_PLUGIN_ASYN_FFT_MODE;
+  
+  asynFFTMode_ = asynPort_->addNewAvailParam(paramName.c_str(),   // name
+                                             asynParamInt32,      // asyn type 
+                                             (uint8_t *)cfgMode_, // pointer to data
+                                             sizeof(cfgMode_),    // size of data
+                                             ECMC_EC_S32,         // ecmc data type
+                                             0);                  // die if fail
+
+  if(!asynFFTMode_) {
+    throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
+  }
+
+  asynFFTMode_->setAllowWriteToEcmc(true);
+  asynFFTMode_->refreshParam(1); // read once into asyn param lib
+}
+
+// Avoid issues with std:to_string()
+std::string ecmcFFT::to_string(int value) {
+  std::ostringstream os;
+  os << value;
+  return os.str();
 }
 
 void ecmcFFT::setEnable(int enable) {
   cfgEnable_ = enable;
 }
   
+void ecmcFFT::triggFFT() {
+  clearBuffers();
+  triggOnce_ = 1;
+}
+
+void ecmcFFT::setModeFFT(FFT_MODE mode) {
+  cfgMode_ = mode;
+}
