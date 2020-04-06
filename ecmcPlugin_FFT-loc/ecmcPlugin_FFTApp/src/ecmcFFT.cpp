@@ -204,8 +204,8 @@ void ecmcFFT::connectToDataSource() {
 void ecmcFFT::dataUpdatedCallback(uint8_t*       data, 
                                   size_t         size,
                                   ecmcEcDataType dt) {
-  // No buffer or full
-  if(!dataBuffer_) {
+  // No buffer or full or not enabled
+  if(!dataBuffer_ || !cfgEnable_) {
     return;
   }
   
