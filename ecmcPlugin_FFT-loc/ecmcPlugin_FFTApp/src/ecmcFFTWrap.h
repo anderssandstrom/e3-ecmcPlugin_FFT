@@ -19,6 +19,8 @@ extern "C" {
 int  createFFT(char *source);
 int  linkDataToFFTs();
 void deleteAllFFTs();
+int  enableFFT(int fftIndex, int enable);
+int  clearFFT(int fftIndex);
 
 # ifdef __cplusplus
 }

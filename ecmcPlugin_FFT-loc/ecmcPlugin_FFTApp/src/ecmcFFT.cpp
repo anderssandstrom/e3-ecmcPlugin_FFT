@@ -586,12 +586,7 @@ void ecmcFFT::initAsyn() {
   asynFFTAmp_->refreshParam(1); // read once into asyn param lib  
 }
 
-// // increase value of counter and refresh asyn param
-// void increaseCounter(){
-//   counter++;
-//   if(paramCount){
-//     paramCount->refreshParamRT(0);
-//     // "callParamCallbacks" are handled in ecmc rt thread so don't call
-//   }
-// }
+void ecmcFFT::setEnable(int enable) {
+  cfgEnable_ = enable;
+}
   

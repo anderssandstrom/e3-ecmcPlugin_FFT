@@ -66,3 +66,25 @@ int  linkDataToFFTs() {
   }
   return 0;
 }
+
+int enableFFT(int fftIndex, int enable) {
+  try {
+    ffts.at(fftIndex)->setEnable(enable);
+  }
+  catch(std::exception& e) {
+    printf("Exception: %s. FFT index out of range.\n",e.what());
+    return ECMC_PLUGIN_FFT_ERROR_CODE;
+  }
+  return 0;
+}
+
+int clearFFT(int fftIndex) {
+  try {
+    ffts.at(fftIndex)->clearBuffers();
+  }
+  catch(std::exception& e) {
+    printf("Exception: %s. FFT index out of range.\n",e.what());
+    return ECMC_PLUGIN_FFT_ERROR_CODE;
+  }  
+  return 0;
+}

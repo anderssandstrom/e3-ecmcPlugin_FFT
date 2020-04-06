@@ -34,7 +34,7 @@ static char*  lastConfStr         = NULL;
  *  Return value other than 0 will be considered error.
  *  configStr can be used for configuration parameters.
  **/
-int adv_exampleConstruct(char *configStr)
+int fft_exampleConstruct(char *configStr)
 {
   //This module is allowed to load several times so no need to check if loaded
 
@@ -46,7 +46,7 @@ int adv_exampleConstruct(char *configStr)
 /** Optional function.
  *  Will be called once at unload.
  **/
-void adv_exampleDestruct(void)
+void fft_exampleDestruct(void)
 {
   deleteAllFFTs();
   if(lastConfStr){
@@ -60,7 +60,7 @@ void adv_exampleDestruct(void)
  *  this plugin to react on ecmc errors
  *  Return value other than 0 will be considered to be an error code in ecmc.
  **/
-int adv_exampleRealtime(int ecmcError)
+int fft_exampleRealtime(int ecmcError)
 {  
   lastEcmcError = ecmcError;
   return 0;
@@ -68,7 +68,7 @@ int adv_exampleRealtime(int ecmcError)
 
 /** Link to data source here since all sources should be availabe at this stage
  **/
-int adv_exampleEnterRT(){
+int fft_exampleEnterRT(){
   return linkDataToFFTs();
 }
 
@@ -76,8 +76,18 @@ int adv_exampleEnterRT(){
  *  Will be called once just before leaving realtime mode
  *  Return value other than 0 will be considered error.
  **/
-int adv_exampleExitRT(void){
+int fft_exampleExitRT(void){
   return 0;
+}
+
+// Plc function for clear
+double fft_clear(double index) {
+  return (double)clearFFT((int)index);
+}
+
+// Plc function for enable
+double fft_enable(double index, double enable) {
+  return (double)enableFFT((int)index, (int)enable);
 }
 
 // Register data for plugin so ecmc know what to use
@@ -98,17 +108,61 @@ struct ecmcPluginData pluginDataDef = {
   // Plugin version
   .version = ECMC_EXAMPLE_PLUGIN_VERSION,
   // Optional construct func, called once at load. NULL if not definded.
-  .constructFnc = adv_exampleConstruct,
+  .constructFnc = fft_exampleConstruct,
   // Optional destruct func, called once at unload. NULL if not definded.
-  .destructFnc = adv_exampleDestruct,
+  .destructFnc = fft_exampleDestruct,
   // Optional func that will be called each rt cycle. NULL if not definded.
-  .realtimeFnc = adv_exampleRealtime,
+  .realtimeFnc = fft_exampleRealtime,
   // Optional func that will be called once just before enter realtime mode
-  .realtimeEnterFnc = adv_exampleEnterRT,
+  .realtimeEnterFnc = fft_exampleEnterRT,
   // Optional func that will be called once just before exit realtime mode
-  .realtimeExitFnc = adv_exampleExitRT,
+  .realtimeExitFnc = fft_exampleExitRT,
   // PLC funcs
-  .funcs[0] = {0},  // last element set all to zero..
+  .funcs[0] =
+      { /*----customPlcFunc2----*/
+        // Function name (this is the name you use in ecmc plc-code)
+        .funcName = "fft_clear",
+        // Function description
+        .funcDesc = "double fft_clear(index) : Clear/reset fft[index].",
+        /**
+        * 7 different prototypes allowed (only doubles since reg in plc).
+        * Only funcArg${argCount} func shall be assigned the rest set to NULL.
+        **/
+        .funcArg0 = NULL,
+        .funcArg1 = fft_clear,
+        .funcArg2 = NULL,
+        .funcArg3 = NULL,
+        .funcArg4 = NULL,
+        .funcArg5 = NULL,
+        .funcArg6 = NULL,
+        .funcArg7 = NULL,
+        .funcArg8 = NULL,
+        .funcArg9 = NULL,
+        .funcArg10 = NULL,        
+      },
+  .funcs[1] =
+      { /*----customPlcFunc2----*/
+        // Function name (this is the name you use in ecmc plc-code)
+        .funcName = "fft_enable",
+        // Function description
+        .funcDesc = "double fft_enable(index, enable) : Set enable for fft[index].",
+        /**
+        * 7 different prototypes allowed (only doubles since reg in plc).
+        * Only funcArg${argCount} func shall be assigned the rest set to NULL.
+        **/
+        .funcArg0 = NULL,
+        .funcArg1 = NULL,
+        .funcArg2 = fft_enable,
+        .funcArg3 = NULL,
+        .funcArg4 = NULL,
+        .funcArg5 = NULL,
+        .funcArg6 = NULL,
+        .funcArg7 = NULL,
+        .funcArg8 = NULL,
+        .funcArg9 = NULL,
+        .funcArg10 = NULL,        
+      },
+  .funcs[2] = {0},  // last element set all to zero..
   // PLC consts
   .consts[0] = {0}, // last element set all to zero..
 };

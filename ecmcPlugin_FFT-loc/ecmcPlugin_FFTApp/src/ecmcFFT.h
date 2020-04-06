@@ -38,10 +38,11 @@ class ecmcFFT {
                                             ecmcEcDataType dt);
   // Call just before realtime because then all data sources should be available
   void                  connectToDataSource();
+  void                  setEnable(int enable);
+  void                  clearBuffers();
 
  private:
   void                  parseConfigStr(char *configStr);
-  void                  clearBuffers();
   void                  addDataToBuffer(double data);
   void                  calcFFT();
   void                  scaleFFT();
