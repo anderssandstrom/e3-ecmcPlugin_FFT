@@ -37,7 +37,7 @@ static char*  lastConfStr         = NULL;
 int adv_exampleConstruct(char *configStr)
 {
   //This module is allowed to load several times so no need to check if loaded
-  
+
   // create FFT object and register data callback
   lastConfStr = strdup(configStr);
   return createFFT(configStr);
@@ -89,8 +89,12 @@ struct ecmcPluginData pluginDataDef = {
   // Description
   .desc = "FFT plugin for use with ecmc.",
   // Option description
-  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"1/0      : Enables/disables printouts from plugin.\n"
-                "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).",
+  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"1/0 : Enables/disables printouts from plugin.\n"
+                "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source> : Sets source variable for FFT (example: ec0.s1.AI_1).\n"
+                "    "ECMC_PLUGIN_NFFT_OPTION_CMD"<nfft> : Data points to collect.\n" 
+                "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0> : Apply scale.\n" 
+                "    "ECMC_PLUGIN_DC_REMOVE_OPTION_CMD"<1/0> : Remove DC offset of input data (SOURCE).\n" 
+                "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0> : Enable data acq. and calcs (can be controlled over asyn).", 
   // Plugin version
   .version = ECMC_EXAMPLE_PLUGIN_VERSION,
   // Optional construct func, called once at load. NULL if not definded.

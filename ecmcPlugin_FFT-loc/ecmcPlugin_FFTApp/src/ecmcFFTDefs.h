@@ -20,6 +20,7 @@
 #define ECMC_PLUGIN_NFFT_OPTION_CMD        "NFFT="
 #define ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD "APPLY_SCALE="
 #define ECMC_PLUGIN_DC_REMOVE_OPTION_CMD   "DC_REMOVE="
+#define ECMC_PLUGIN_ENABLE_OPTION_CMD      "ENABLE="
 
 /** Just one error code in "c" part of plugin 
 (error handled with exceptions i c++ part) */

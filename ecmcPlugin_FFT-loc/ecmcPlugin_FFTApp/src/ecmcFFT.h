@@ -45,13 +45,16 @@ class ecmcFFT {
   void                  addDataToBuffer(double data);
   void                  calcFFT();
   void                  scaleFFT();
+  void                  calcFFTAmp();
+  void                  initAsyn();
   static int            dataTypeSupported(ecmcEcDataType dt);
 
   ecmcDataItem         *dataItem_;
   ecmcAsynPortDriver   *asynPort_;
   kissfft<double>*      fftDouble_;
-  double*               dataBuffer_;
-  std::complex<double>* fftBuffer_; // Result
+  double*               dataBuffer_;    // Input data (real)
+  std::complex<double>* fftBuffer_;     // Result (complex)
+  double*               fftBufferAmp_;  // Resulting amplitude (abs of fftBuffer_)
   size_t                elementsInBuffer_;
   // ecmc callback handle for use when deregister at unload
   int                   callbackHandle_;
@@ -64,7 +67,14 @@ class ecmcFFT {
   int                   cfgDbgMode_;       // Config: allow dbg printouts
   int                   cfgApplyScale_;    // Config: apply scale 1/nfft
   int                   cfgDcRemove_;      // Config: remove dc (average) 
-  size_t                cfgNfft_;          // Config: Data set size  
+  size_t                cfgNfft_;          // Config: Data set size
+  int                   cfgEnable_;        // Config: Enable data acq./calc.
+
+  // Asyn
+  ecmcAsynDataItem*     asynEnable_;
+  ecmcAsynDataItem*     asynRawData_;      // Raw data (input) array (double)
+  ecmcAsynDataItem*     asynFFTAmp_;       // FFT amplitude array (double)
+  
 
   // Some generic utility functions
   static uint8_t        getUint8(uint8_t* data);
