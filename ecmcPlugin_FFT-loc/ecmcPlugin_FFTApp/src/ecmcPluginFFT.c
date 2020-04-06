@@ -36,6 +36,8 @@ static char*  lastConfStr         = NULL;
  **/
 int adv_exampleConstruct(char *configStr)
 {
+  //This module is allowed to load several times so no need to check if loaded
+  
   // create FFT object and register data callback
   lastConfStr = strdup(configStr);
   return createFFT(configStr);
