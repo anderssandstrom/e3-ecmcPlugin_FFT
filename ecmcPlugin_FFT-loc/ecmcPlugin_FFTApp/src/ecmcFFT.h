@@ -36,13 +36,15 @@ class ecmcFFT {
   void                  dataUpdatedCallback(uint8_t* data, 
                                             size_t size,
                                             ecmcEcDataType dt);
+  // Call just before realtime because then all data sources should be available
+  void                  connectToDataSource();
+
  private:
   void                  parseConfigStr(char *configStr);
-  void                  connectToDataSource();
   void                  clearBuffers();
-  void                  calcFFT();
   void                  addDataToBuffer(double data);
-
+  void                  calcFFT();
+  void                  scaleFFT();
   static int            dataTypeSupported(ecmcEcDataType dt);
 
   ecmcDataItem         *dataItem_;

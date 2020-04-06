@@ -47,7 +47,22 @@ int createFFT(char* configStr) {
 void deleteAllFFTs() {
   for(std::vector<ecmcFFT*>::iterator pfft = ffts.begin(); pfft != ffts.end(); ++pfft) {
     if(*pfft) {
-      delete *pfft;
+      delete (*pfft);
     }
   }
+}
+
+int  linkDataToFFTs() {
+  for(std::vector<ecmcFFT*>::iterator pfft = ffts.begin(); pfft != ffts.end(); ++pfft) {
+    if(*pfft) {
+      try {
+        (*pfft)->connectToDataSource();
+      }
+      catch(std::exception& e) {
+        printf("Exception: %s.",e.what());
+        return ECMC_PLUGIN_FFT_ERROR_CODE;
+      }
+    }
+  }
+  return 0;
 }

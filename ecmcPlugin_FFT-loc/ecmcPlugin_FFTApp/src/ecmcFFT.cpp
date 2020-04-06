@@ -69,7 +69,6 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cfgNfft_          = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
   cfgDcRemove_      = 0;
   cfgApplyScale_    = 1;   // Scale as default to get correct amplitude in fft
-
   asynPort_         = (ecmcAsynPortDriver*) getEcmcAsynPortDriver();
   if(!asynPort_) {
     throw std::runtime_error("Asyn port NULL");
@@ -81,9 +80,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
     throw std::out_of_range("NFFT must be > 0 and even N^2.");
   }
   // set scale factor
-  scale_ = 1.0 / (double)cfgNfft_;
-
-  connectToDataSource();     // Also assigns dataItem_
+  scale_ = 1.0 / cfgNfft_; // sqrt((double)cfgNfft_);
 
   // Allocate buffers
   dataBuffer_      = new double[cfgNfft_];
@@ -204,6 +201,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     //Buffer full
     if(!fftCalcDone_){
       calcFFT();
+      scaleFFT();
       if(cfgDbgMode_){
         printComplexArray(fftBuffer_,
                     cfgNfft_,
@@ -264,11 +262,11 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 
 void ecmcFFT::addDataToBuffer(double data) {
   if(dataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
-    if(cfgApplyScale_) {
-      dataBuffer_[elementsInBuffer_] = data*scale_;
-    } else {
+    //if(cfgApplyScale_) {
+    //  dataBuffer_[elementsInBuffer_] = data * scale_;
+    //} else {
       dataBuffer_[elementsInBuffer_] = data;
-    }
+    //}
   }
   elementsInBuffer_ ++;
 }
@@ -283,6 +281,16 @@ void ecmcFFT::clearBuffers() {
 void ecmcFFT::calcFFT() {
   fftDouble_->transform_real(dataBuffer_, fftBuffer_);
   fftCalcDone_ = 1;
+}
+
+void ecmcFFT::scaleFFT() {
+  if(!cfgApplyScale_) {
+    return;
+  }
+
+  for(unsigned int i = 0 ; i < cfgNfft_ ; ++i ) {
+    fftBuffer_[i] = fftBuffer_[i] * scale_;
+  }
 }
 
 void ecmcFFT::printEcDataArray(uint8_t*       data, 
@@ -335,11 +343,11 @@ void ecmcFFT::printEcDataArray(uint8_t*       data,
 }
 
 void ecmcFFT::printComplexArray(std::complex<double>* fftBuff,
-                          size_t elements,
-                          int objId) {
+                                size_t elements,
+                                int objId) {
   printf("fft id: %d, results: \n",objId);
   for(unsigned int i = 0 ; i < elements ; ++i ) {
-    printf("%lf\n", std::abs(fftBuff[i]));
+    printf("%d: %lf\n", i, std::abs(fftBuff[i]));
   }
 }
 

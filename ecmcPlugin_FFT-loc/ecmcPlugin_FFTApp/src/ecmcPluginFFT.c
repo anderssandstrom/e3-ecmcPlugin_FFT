@@ -64,12 +64,10 @@ int adv_exampleRealtime(int ecmcError)
   return 0;
 }
 
-/** Optional function.
- *  Will be called once just before going to realtime mode
- *  Return value other than 0 will be considered error.
+/** Link to data source here since all sources should be availabe at this stage
  **/
 int adv_exampleEnterRT(){
-  return 0;
+  return linkDataToFFTs();
 }
 
 /** Optional function.

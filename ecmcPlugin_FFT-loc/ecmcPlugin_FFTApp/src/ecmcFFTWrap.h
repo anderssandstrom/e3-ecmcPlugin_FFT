@@ -17,6 +17,7 @@ extern "C" {
 # endif  // ifdef __cplusplus
 
 int  createFFT(char *source);
+int  linkDataToFFTs();
 void deleteAllFFTs();
 
 # ifdef __cplusplus
