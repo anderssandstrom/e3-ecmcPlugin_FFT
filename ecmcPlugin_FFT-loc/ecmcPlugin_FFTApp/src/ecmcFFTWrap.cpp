@@ -34,7 +34,7 @@ int createFFT(char* configStr) {
     if(fft) {
       delete fft;
     }
-    printf("Exception: %s.",e.what());
+    printf("Exception: %s. Plugin will unload.\n",e.what());
     return ECMC_PLUGIN_FFT_ERROR_CODE;
   }
   
@@ -59,7 +59,7 @@ int  linkDataToFFTs() {
         (*pfft)->connectToDataSource();
       }
       catch(std::exception& e) {
-        printf("Exception: %s.",e.what());
+        printf("Exception: %s. Plugin will unload.\n",e.what());
         return ECMC_PLUGIN_FFT_ERROR_CODE;
       }
     }
