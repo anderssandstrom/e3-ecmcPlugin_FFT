@@ -220,9 +220,14 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   if(elementsInBuffer_ >= cfgNfft_) {
     //Buffer full
     if(!fftCalcDone_){
-      calcFFT();      // FFT cacluation
+      // Perform calcs
+      calcFFT();      // FFT cacluation ()
       scaleFFT();     // Scale FFT
-      calcFFTAmp();   // Calculate amplitude
+      calcFFTAmp();   // Calculate amplitude from complex 
+
+      // Update asyn with both input and result
+      asynRawData_->refreshParamRT(1); // Forced update (do not consider record rate)
+      asynFFTAmp_->refreshParamRT(1);  // Forced update (do not consider record rate)
 
       if(cfgDbgMode_){
         printComplexArray(fftBuffer_,
