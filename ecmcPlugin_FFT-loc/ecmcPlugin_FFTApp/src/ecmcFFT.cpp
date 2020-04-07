@@ -217,7 +217,8 @@ void ecmcFFT::connectToDataSource() {
   if( !dataTypeSupported(dataItem_->getEcmcDataType()) ) {
     throw std::invalid_argument( "Data type not supported." );
   }
-  status_ = IDLE;
+
+  updateStatus(IDLE);
 }
 
 void ecmcFFT::dataUpdatedCallback(uint8_t*       data, 
@@ -228,7 +229,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     return;
   }
   if (cfgMode_ == TRIGG && !triggOnce_ ) {
-    status_ = IDLE;
+    updateStatus(IDLE);
     return; // Wait for trigger from plc or asyn
   }
 
@@ -244,7 +245,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     //Buffer full
     if(!fftCalcDone_){
       // Perform calcs
-      status_ = CALC;
+      updateStatus(CALC);
 
       // **** Breakout to sperate low prio work thread below
       calcFFT();      // FFT cacluation
@@ -276,7 +277,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     return;
   }
 
-  status_ = ACQ;
+  updateStatus(ACQ);
 
   size_t dataElementSize = getEcDataTypeByteSize(dt);
 
@@ -572,12 +573,12 @@ void ecmcFFT::initAsyn() {
   // Add enable "plugin.fft%d.enable"
   std::string paramName =ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_ENABLE;
-  asynEnable_ = asynPort_->addNewAvailParam(paramName.c_str(),  // name
-                                            asynParamInt32,       // asyn type 
-                                            (uint8_t *)&(cfgEnable_),// pointer to data
-                                            sizeof(cfgEnable_),      // size of data
-                                            ECMC_EC_S32,          // ecmc data type
-                                            0);                   // die if fail
+  asynEnable_ = asynPort_->addNewAvailParam(paramName.c_str(),        // name
+                                            asynParamInt32,           // asyn type 
+                                            (uint8_t *)&(cfgEnable_), // pointer to data
+                                            sizeof(cfgEnable_),       // size of data
+                                            ECMC_EC_S32,              // ecmc data type
+                                            0);                       // die if fail
 
   if(!asynEnable_) {
     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
@@ -589,7 +590,7 @@ void ecmcFFT::initAsyn() {
   paramName =ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_RAWDATA;
   
-  asynRawData_ = asynPort_->addNewAvailParam(paramName.c_str(),      // name
+  asynRawData_ = asynPort_->addNewAvailParam(paramName.c_str(),       // name
                                              asynParamFloat64Array,   // asyn type 
                                              (uint8_t *)dataBuffer_,  // pointer to data
                                              cfgNfft_*sizeof(double), // size of data
@@ -644,8 +645,8 @@ void ecmcFFT::initAsyn() {
   
   asynFFTStat_ = asynPort_->addNewAvailParam(paramName.c_str(),   // name
                                              asynParamInt32,      // asyn type 
-                                             (uint8_t *)status_, // pointer to data
-                                             sizeof(status_),    // size of data
+                                             (uint8_t *)status_,  // pointer to data
+                                             sizeof(status_),     // size of data
                                              ECMC_EC_S32,         // ecmc data type
                                              0);                  // die if fail
 
@@ -679,4 +680,9 @@ void ecmcFFT::setModeFFT(FFT_MODE mode) {
 
 FFT_STATUS ecmcFFT::getStatusFFT() {
   return status_;
+}
+
+void ecmcFFT::updateStatus(FFT_STATUS status) {
+  status_ = status;
+  asynFFTStat_->refreshParamRT(1);
 }
