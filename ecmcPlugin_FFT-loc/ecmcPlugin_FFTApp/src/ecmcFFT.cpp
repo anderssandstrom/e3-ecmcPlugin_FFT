@@ -28,14 +28,6 @@
 #include "ecmcPluginClient.h"
 #include "ecmcAsynPortDriver.h"
 
-#define PRINT_IF_DBG_MODE(fmt, ...)        \
-   {                                       \
-     if(cfgDbgMode_){                         \
-       printf(fmt, ## __VA_ARGS__);        \
-     }                                     \
-   }                                       \
-
-
 // New data callback from ecmc
 static int printMissingObjError = 1;
 
