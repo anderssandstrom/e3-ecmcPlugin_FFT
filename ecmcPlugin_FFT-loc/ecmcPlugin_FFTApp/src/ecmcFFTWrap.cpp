@@ -110,3 +110,15 @@ int modeFFT(int fftIndex, FFT_MODE mode) {
   }  
   return 0;
 }
+
+FFT_STATUS  statFFT(int fftIndex) {
+  try {
+    return ffts.at(fftIndex)->getStatusFFT();
+  }
+  catch(std::exception& e) {
+    printf("Exception: %s. FFT index out of range.\n",e.what());
+    return NO_STAT;
+  }  
+  return NO_STAT;
+}
+

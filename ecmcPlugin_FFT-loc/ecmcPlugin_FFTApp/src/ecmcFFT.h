@@ -42,6 +42,7 @@ class ecmcFFT {
   void                  connectToDataSource();
   void                  setEnable(int enable);
   void                  setModeFFT(FFT_MODE mode);
+  FFT_STATUS            getStatusFFT();
   void                  clearBuffers();
   void                  triggFFT();
 
@@ -67,6 +68,7 @@ class ecmcFFT {
   int                   objectId_;         // Unique object id
   int                   triggOnce_;
   double                scale_;            // Config: Data set size  
+  FFT_STATUS            status_;           // Status/state  (NO_STAT, IDLE, ACQ, CALC)
 
   // Config options
   char*                 cfgDataSourceStr_; // Config: data source string
@@ -76,6 +78,7 @@ class ecmcFFT {
   size_t                cfgNfft_;          // Config: Data set size
   int                   cfgEnable_;        // Config: Enable data acq./calc.
   FFT_MODE              cfgMode_;          // Config: Mode continous or triggered.
+
 
   // Asyn
   ecmcAsynDataItem*     asynEnable_;       // Enable/disable acq./calcs

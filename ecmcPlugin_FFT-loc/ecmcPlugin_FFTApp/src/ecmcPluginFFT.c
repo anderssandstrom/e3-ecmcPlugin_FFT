@@ -67,6 +67,7 @@ int fftRealtime(int ecmcError)
 }
 
 /** Link to data source here since all sources should be availabe at this stage
+ *  (for example ecmc PLC variables are defined only at enter of realtime)
  **/
 int fftEnterRT(){
   return linkDataToFFTs();
@@ -98,6 +99,11 @@ double fft_trigg(double index) {
 // Plc function for enable
 double fft_mode(double index, double mode) {
   return (double)modeFFT((int)index, (FFT_MODE)((int)mode));
+}
+
+// Plc function for enable
+double fft_stat(double index) {
+  return (double)statFFT((int)index);
 }
 
 // Register data for plugin so ecmc know what to use
@@ -218,21 +224,67 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg9 = NULL,
         .funcArg10 = NULL,        
       },
-  .funcs[4] = {0},  // last element set all to zero..
+    .funcs[4] =
+      { /*----fft_stat----*/
+        // Function name (this is the name you use in ecmc plc-code)
+        .funcName = "fft_stat",
+        // Function description
+        .funcDesc = "double fft_stat(index) : Get status of fft (NO_STAT, IDLE, ACQ, CALC) for fft[index].",
+        /**
+        * 7 different prototypes allowed (only doubles since reg in plc).
+        * Only funcArg${argCount} func shall be assigned the rest set to NULL.
+        **/
+        .funcArg0 = NULL,
+        .funcArg1 = fft_stat,
+        .funcArg2 = NULL,
+        .funcArg3 = NULL,
+        .funcArg4 = NULL,
+        .funcArg5 = NULL,
+        .funcArg6 = NULL,
+        .funcArg7 = NULL,
+        .funcArg8 = NULL,
+        .funcArg9 = NULL,
+        .funcArg10 = NULL,        
+      },
+  .funcs[5] = {0},  // last element set all to zero..
   // PLC consts
   /* CONTINIOUS MODE = 1 */
   .consts[0] = {
         .constName = "fft_CONT",
-        .constDesc = "Continious mode",
+        .constDesc = "FFT Mode: Continious",
         .constValue = CONT
       },
   /* TRIGGERED MODE = 2 */
   .consts[1] = {
         .constName = "fft_TRIGG",
-        .constDesc = "Triggered mode",
+        .constDesc = "FFT Mode :Triggered",
         .constValue = TRIGG
       },
-  .consts[2] = {0}, // last element set all to zero..
+  /* TRIGGERED MODE = 2 */
+  .consts[2] = {
+        .constName = "fft_NO_STAT",
+        .constDesc = "FFT Status: Invalid state",
+        .constValue = NO_STAT,
+      },
+  /* TRIGGERED MODE = 2 */
+  .consts[3] = {
+        .constName = "fft_IDLE",
+        .constDesc = "FFT Status: Idle state (waiting for trigger)",
+        .constValue = IDLE
+      },
+  /* TRIGGERED MODE = 2 */
+  .consts[4] = {
+        .constName = "fft_ACQ",
+        .constDesc = "FFT Status: Acquiring data",
+        .constValue = ACQ
+      },
+  /* TRIGGERED MODE = 2 */
+  .consts[5] = {
+        .constName = "fft_TRIGG",
+        .constDesc = "FFT Status: Calculating result",
+        .constValue = CALC
+      },
+  .consts[6] = {0}, // last element set all to zero..
 };
 
 ecmc_plugin_register(pluginDataDef);

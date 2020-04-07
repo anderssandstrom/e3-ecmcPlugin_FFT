@@ -32,6 +32,13 @@ typedef enum FFT_MODE{
   TRIGG   = 2,
 } FFT_MODE;
 
+typedef enum FFT_STATUS{
+  NO_STAT = 0,
+  IDLE    = 1,  // Doing nothing, waiting for trigg
+  ACQ     = 2,  // Acquireing data
+  CALC    = 3,  // Calc FFT
+} FFT_STATUS;
+
 /** Just one error code in "c" part of plugin 
 (error handled with exceptions i c++ part) */
 #define ECMC_PLUGIN_FFT_ERROR_CODE 1

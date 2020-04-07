@@ -67,7 +67,8 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   asynPort_         = NULL;
   asynEnable_       = NULL;
   asynRawData_      = NULL;  // Input data
-  asynFFTAmp_       = NULL;  // Result  
+  asynFFTAmp_       = NULL;  // Result
+  status_           = NO_STAT;
   elementsInBuffer_ = 0;
   fftCalcDone_      = 0;
   callbackHandle_   = -1;
@@ -213,6 +214,7 @@ void ecmcFFT::connectToDataSource() {
   if( !dataTypeSupported(dataItem_->getEcmcDataType()) ) {
     throw std::invalid_argument( "Data type not supported." );
   }
+  status_ = IDLE;
 }
 
 void ecmcFFT::dataUpdatedCallback(uint8_t*       data, 
@@ -223,6 +225,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     return;
   }
   if (cfgMode_ == TRIGG && !triggOnce_ ) {
+    status_ = IDLE;
     return; // Wait for trigger from plc or asyn
   }
 
@@ -238,11 +241,16 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     //Buffer full
     if(!fftCalcDone_){
       // Perform calcs
-      calcFFT();      // FFT cacluation ()
+      status_ = CALC;
+
+      // **** Breakout to sperate low prio work thread below
+      calcFFT();      // FFT cacluation
       scaleFFT();     // Scale FFT
       calcFFTAmp();   // Calculate amplitude from complex 
-      triggOnce_ = 0; // Wait for nex trigger if in trigg mode
+      // **** Breakout to thread above
 
+      triggOnce_ = 0; // Wait for nex trigger if in trigg mode
+  
       // Update asyn with both input and result
       asynRawData_->refreshParamRT(1); // Forced update (do not consider record rate)
       asynFFTAmp_->refreshParamRT(1);  // Forced update (do not consider record rate)
@@ -264,6 +272,8 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     }
     return;
   }
+
+  status_ = ACQ;
 
   size_t dataElementSize = getEcDataTypeByteSize(dt);
 
@@ -644,4 +654,8 @@ void ecmcFFT::triggFFT() {
 
 void ecmcFFT::setModeFFT(FFT_MODE mode) {
   cfgMode_ = mode;
+}
+
+FFT_STATUS ecmcFFT::getStatusFFT() {
+  return status_;
 }
