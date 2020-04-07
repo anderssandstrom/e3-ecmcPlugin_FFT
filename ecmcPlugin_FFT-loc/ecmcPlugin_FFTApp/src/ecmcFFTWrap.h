@@ -17,13 +17,16 @@
 extern "C" {
 # endif  // ifdef __cplusplus
 
+// To one fft object
 int  createFFT(char *source);
-int  linkDataToFFTs();
-void deleteAllFFTs();
 int  enableFFT(int fftIndex, int enable);
 int  clearFFT(int fftIndex);
 int  triggFFT(int fftIndex);
-int  setModeFFT(int fftIndex, FFT_MODE mode);
+int  modeFFT(int fftIndex, FFT_MODE mode);
+// To all fft objects
+int  linkDataToFFTs();
+void deleteAllFFTs();
+
 # ifdef __cplusplus
 }
 # endif  // ifdef __cplusplus

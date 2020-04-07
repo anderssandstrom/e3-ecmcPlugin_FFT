@@ -80,7 +80,7 @@ int fftExitRT(void){
   return 0;
 }
 
-// Plc function for clear
+// Plc function for clear of buffers
 double fft_clear(double index) {
   return (double)clearFFT((int)index);
 }
@@ -90,14 +90,14 @@ double fft_enable(double index, double enable) {
   return (double)enableFFT((int)index, (int)enable);
 }
 
-// Plc function for trigg new measurement
+// Plc function for trigg new measurement (will clear buffers)
 double fft_trigg(double index) {
   return (double)triggFFT((int)index);
 }
 
 // Plc function for enable
 double fft_mode(double index, double mode) {
-  return (double)setModeFFT((int)index, (FFT_MODE)mode);
+  return (double)modeFFT((int)index, (FFT_MODE)((int)mode));
 }
 
 // Register data for plugin so ecmc know what to use
@@ -120,15 +120,15 @@ struct ecmcPluginData pluginDataDef = {
   // Plugin version
   .version = ECMC_EXAMPLE_PLUGIN_VERSION,
   // Optional construct func, called once at load. NULL if not definded.
-  .constructFnc = fft_exampleConstruct,
+  .constructFnc = fftConstruct,
   // Optional destruct func, called once at unload. NULL if not definded.
-  .destructFnc = fft_exampleDestruct,
+  .destructFnc = fftDestruct,
   // Optional func that will be called each rt cycle. NULL if not definded.
-  .realtimeFnc = fft_exampleRealtime,
+  .realtimeFnc = fftRealtime,
   // Optional func that will be called once just before enter realtime mode
-  .realtimeEnterFnc = fft_exampleEnterRT,
+  .realtimeEnterFnc = fftEnterRT,
   // Optional func that will be called once just before exit realtime mode
-  .realtimeExitFnc = fft_exampleExitRT,
+  .realtimeExitFnc = fftExitRT,
   // PLC funcs
   .funcs[0] =
       { /*----fft_clear----*/
@@ -179,7 +179,7 @@ struct ecmcPluginData pluginDataDef = {
         // Function name (this is the name you use in ecmc plc-code)
         .funcName = "fft_trigg",
         // Function description
-        .funcDesc = "double fft_trigg(index) : Trigg new measurement for fft[index].",
+        .funcDesc = "double fft_trigg(index) : Trigg new measurement for fft[index]. Will clear buffers.",
         /**
         * 7 different prototypes allowed (only doubles since reg in plc).
         * Only funcArg${argCount} func shall be assigned the rest set to NULL.
@@ -208,7 +208,7 @@ struct ecmcPluginData pluginDataDef = {
         **/
         .funcArg0 = NULL,
         .funcArg1 = NULL,
-        .funcArg2 = fft_trigg,
+        .funcArg2 = fft_mode,
         .funcArg3 = NULL,
         .funcArg4 = NULL,
         .funcArg5 = NULL,
@@ -222,13 +222,13 @@ struct ecmcPluginData pluginDataDef = {
   // PLC consts
   /* CONTINIOUS MODE = 1 */
   .consts[0] = {
-        .constName = "fft_MODE_CONT",
+        .constName = "fft_CONT",
         .constDesc = "Continious mode",
         .constValue = CONT
       },
   /* TRIGGERED MODE = 2 */
   .consts[1] = {
-        .constName = "fft_MODE_TRIGG",
+        .constName = "fft_TRIGG",
         .constDesc = "Triggered mode",
         .constValue = TRIGG
       },

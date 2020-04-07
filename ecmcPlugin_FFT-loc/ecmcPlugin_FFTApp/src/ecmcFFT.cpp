@@ -241,6 +241,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
       calcFFT();      // FFT cacluation ()
       scaleFFT();     // Scale FFT
       calcFFTAmp();   // Calculate amplitude from complex 
+      triggOnce_ = 0; // Wait for nex trigger if in trigg mode
 
       // Update asyn with both input and result
       asynRawData_->refreshParamRT(1); // Forced update (do not consider record rate)
@@ -255,8 +256,11 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
                           ECMC_EC_F64,
                           objectId_);
       }
-      // Buffer new data
-      clearBuffers();
+
+      // If mode continious then start over
+      if(cfgMode_ == CONT) { 
+        clearBuffers();
+      }
     }
     return;
   }

@@ -26,11 +26,11 @@
 #define ECMC_PLUGIN_MODE_CONT_OPTION       "CONT"
 #define ECMC_PLUGIN_MODE_TRIGG_OPTION      "TRIGG"
 
-enum FFT_MODE{
+typedef enum FFT_MODE{
   NO_MODE = 0,
   CONT    = 1,
   TRIGG   = 2,
-};
+} FFT_MODE;
 
 /** Just one error code in "c" part of plugin 
 (error handled with exceptions i c++ part) */
