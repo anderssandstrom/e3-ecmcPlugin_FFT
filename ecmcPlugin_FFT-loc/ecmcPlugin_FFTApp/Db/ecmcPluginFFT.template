@@ -3,7 +3,7 @@ record(longin,"$(P)Plugin-FFT${INDEX}-stat"){
   field(DESC, "Status")
   field(PINI, "1")
   field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.status?")
+  field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.status?")
   field(SCAN, "I/O Intr")
   field(TSE,  "$(TSE=-2)")
 }
@@ -13,11 +13,11 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Source"){
   field(DESC, "Data source name")
   field(PINI, "1")
   field(DTYP, "asynInt8ArrayIn")
-  field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt8ArrayIn/plugin.fft${INDEX}.source?")
-  field(FTVL, "CHAR")asynParamInt8Array
+  field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt8ArrayIn/plugin.fft${INDEX}.source?")
+  field(FTVL, "CHAR")
   field(NELM, "1024")
   field(SCAN, "I/O Intr")
-  field(TSE,  "$(TSE=-2)")
+  field(TSE,  "$(TSE=-2)")  
 }
 
 # Rawdata
@@ -26,7 +26,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Raw-Data-Act"){
   field(DESC, "Raw data")
   field(PINI, "1")
   field(DTYP, "asynFloat64ArrayIn")
-  field(INP,  "@asyn($(PORT),$(ADDR=),$(TIMEOUT=1))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynFloat64ArrayIn/plugin.fft${INDEX}.rawdata?")
+  field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynFloat64ArrayIn/plugin.fft${INDEX}.rawdata?")
   field(FTVL, "DOUBLE")
   field(NELM, "$(NELM)")
   field(SCAN, "I/O Intr")
@@ -39,7 +39,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-Amp-Act"){
   field(DESC, "FFT spectrum amplitude result")
   field(PINI, "1")
   field(DTYP, "asynFloat64ArrayIn")
-  field(INP,  "@asyn($(PORT),$(ADDR=),$(TIMEOUT=1))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynFloat64ArrayIn/plugin.fft${INDEX}.fftamplitude?")
+  field(INP,  "@asyn($(PORT),$(ADDR=0=),$(TIMEOUT=1000=1))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynFloat64ArrayIn/plugin.fft${INDEX}.fftamplitude?")
   field(FTVL, "DOUBLE")
   field(NELM, "$(NELM)")
   field(SCAN, "I/O Intr")
@@ -49,7 +49,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-Amp-Act"){
 record(bo,"$(P)Plugin-FFT${INDEX}-Enable"){
   field(DESC, "FFT Enable")
   field(DTYP,"asynInt32")
-  field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.enable=")
+  field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.enable=")
   field(ZNAM,"FALSE")
   field(ONAM,"TRUE")
   field(DOL, "0")
@@ -59,7 +59,7 @@ record(bo,"$(P)Plugin-FFT${INDEX}-Enable"){
 record(bo,"$(P)Plugin-FFT${INDEX}-Trigg"){
   field(DESC, "FFT Trigg measurement")
   field(DTYP,"asynInt32")
-  field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.trigg=")
+  field(OUT, "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.trigg=")
   field(ZNAM,"FALSE")
   field(ONAM,"TRUE")
   field(DOL, "0")
@@ -71,7 +71,7 @@ record(longout,"$(P)Plugin-FFT${INDEX}-Mode-RB"){
   field(PINI, "1")
   field(TSE, -2)
   field(DTYP, "asynInt32")
-  field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=0))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.mode=")
+  field(OUT,  "@asyn($(PORT),$(ADDR=0=0),$(TIMEOUT=1000=0))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynInt32/plugin.fft${INDEX}.mode=")
   field(SCAN, "Passive")
   field(TSE,  "$(TSE=0)")
 }

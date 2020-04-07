@@ -621,12 +621,12 @@ void ecmcFFT::initAsyn() {
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_MODE;
   
-  asynFFTMode_ = asynPort_->addNewAvailParam(paramName.c_str(),   // name
-                                             asynParamInt32,      // asyn type 
-                                             (uint8_t *)cfgMode_, // pointer to data
-                                             sizeof(cfgMode_),    // size of data
-                                             ECMC_EC_S32,         // ecmc data type
-                                             0);                  // die if fail
+  asynFFTMode_ = asynPort_->addNewAvailParam(paramName.c_str(),      // name
+                                             asynParamInt32,         // asyn type 
+                                             (uint8_t *)(&cfgMode_), // pointer to data
+                                             sizeof(cfgMode_),       // size of data
+                                             ECMC_EC_S32,            // ecmc data type
+                                             0);                     // die if fail
 
   if(!asynFFTMode_) {
     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
@@ -639,12 +639,12 @@ void ecmcFFT::initAsyn() {
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_STAT;
   
-  asynFFTStat_ = asynPort_->addNewAvailParam(paramName.c_str(),   // name
-                                             asynParamInt32,      // asyn type 
-                                             (uint8_t *)status_,  // pointer to data
-                                             sizeof(status_),     // size of data
-                                             ECMC_EC_S32,         // ecmc data type
-                                             0);                  // die if fail
+  asynFFTStat_ = asynPort_->addNewAvailParam(paramName.c_str(),      // name
+                                             asynParamInt32,         // asyn type 
+                                             (uint8_t *)(&status_),  // pointer to data
+                                             sizeof(status_),        // size of data
+                                             ECMC_EC_S32,            // ecmc data type
+                                             0);                     // die if fail
 
   if(!asynFFTStat_) {
     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
@@ -675,18 +675,18 @@ void ecmcFFT::initAsyn() {
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_TRIGG;
   
-  asynTrigg_ = asynPort_->addNewAvailParam(paramName.c_str(),     // name
-                                           asynParamInt32,        // asyn type 
-                                           (uint8_t *)triggOnce_, // pointer to data
-                                           sizeof(triggOnce_),    // size of data
-                                           ECMC_EC_S32,           // ecmc data type
-                                           0);                    // die if fail
+  asynTrigg_ = asynPort_->addNewAvailParam(paramName.c_str(),        // name
+                                           asynParamInt32,           // asyn type 
+                                           (uint8_t *)(&triggOnce_), // pointer to data
+                                           sizeof(triggOnce_),       // size of data
+                                           ECMC_EC_S32,              // ecmc data type
+                                           0);                       // die if fail
 
   if(!asynTrigg_) {
     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
   }
 
-  asynTrigg_->setAllowWriteToEcmc(false);
+  asynTrigg_->setAllowWriteToEcmc(true);
   asynTrigg_->refreshParam(1); // read once into asyn param lib  
 }
 

@@ -46,6 +46,7 @@ USR_LDFLAGS  += -lstdc++
 USR_INCLUDES += -I$(where_am_I)$(APPSRC)
 
 TEMPLATES += $(wildcard $(APPDB)/*.db)
+TEMPLATES += $(wildcard $(APPDB)/*.template)
 SOURCES += $(APPSRC)/ecmcPluginFFT.c
 SOURCES += $(APPSRC)/ecmcFFTWrap.cpp
 SOURCES += $(APPSRC)/ecmcFFT.cpp
