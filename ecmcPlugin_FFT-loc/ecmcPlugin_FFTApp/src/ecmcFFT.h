@@ -45,6 +45,10 @@ class ecmcFFT {
   FFT_STATUS            getStatusFFT();
   void                  clearBuffers();
   void                  triggFFT();
+  
+  /** Do not use this as same time as callback!
+  * if used it should be called from ecmc realtime callback*/
+  void                  sampleData();
 
  private:
   void                  parseConfigStr(char *configStr);
@@ -57,29 +61,33 @@ class ecmcFFT {
   static int            dataTypeSupported(ecmcEcDataType dt);
 
   ecmcDataItem         *dataItem_;
+  ecmcDataItemInfo     *dataItemInfo_;
   ecmcAsynPortDriver   *asynPort_;
   kissfft<double>*      fftDouble_;
   double*               dataBuffer_;    // Input data (real)
   std::complex<double>* fftBuffer_;     // Result (complex)
   double*               fftBufferAmp_;  // Resulting amplitude (abs of fftBuffer_)
   size_t                elementsInBuffer_;
+  double                ecmcSampleRateHz_;
   // ecmc callback handle for use when deregister at unload
   int                   callbackHandle_;
   int                   fftCalcDone_;
   int                   objectId_;         // Unique object id
   int                   triggOnce_;
+  int                   cycleCounter_;
+  int                   ignoreCycles_;
   double                scale_;            // Config: Data set size  
   FFT_STATUS            status_;           // Status/state  (NO_STAT, IDLE, ACQ, CALC)
 
   // Config options
-  char*                 cfgDataSourceStr_; // Config: data source string
-  int                   cfgDbgMode_;       // Config: allow dbg printouts
-  int                   cfgApplyScale_;    // Config: apply scale 1/nfft
-  int                   cfgDcRemove_;      // Config: remove dc (average) 
-  size_t                cfgNfft_;          // Config: Data set size
-  int                   cfgEnable_;        // Config: Enable data acq./calc.
-  FFT_MODE              cfgMode_;          // Config: Mode continous or triggered.
-
+  char*                 cfgDataSourceStr_;   // Config: data source string
+  int                   cfgDbgMode_;         // Config: allow dbg printouts
+  int                   cfgApplyScale_;      // Config: apply scale 1/nfft
+  int                   cfgDcRemove_;        // Config: remove dc (average) 
+  size_t                cfgNfft_;            // Config: Data set size
+  int                   cfgEnable_;          // Config: Enable data acq./calc.
+  FFT_MODE              cfgMode_;            // Config: Mode continous or triggered.
+  double                cfgFFTSampleRateHz_; // Config: Sample rate (defaukts to ecmc rate)
 
   // Asyn
   ecmcAsynDataItem*     asynEnable_;       // Enable/disable acq./calcs

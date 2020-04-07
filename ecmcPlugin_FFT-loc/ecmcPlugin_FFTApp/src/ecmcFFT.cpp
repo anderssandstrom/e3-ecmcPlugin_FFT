@@ -31,6 +31,8 @@
 // New data callback from ecmc
 static int printMissingObjError = 1;
 
+/** This callback will not be used (sample data inteface is used instead to get an stable sample freq)
+  since the callback is called when data is updated it might */
 void f_dataUpdatedCallback(uint8_t* data, size_t size, ecmcEcDataType dt, void* obj) {
   if(!obj) {
     if(printMissingObjError){
@@ -58,6 +60,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cfgDataSourceStr_ = NULL;
   dataBuffer_       = NULL;
   dataItem_         = NULL;
+  dataItemInfo_     = NULL;
   fftDouble_        = NULL;
   asynPort_         = NULL;
   asynEnable_       = NULL;  // Enable
@@ -74,6 +77,12 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   objectId_         = fftIndex;
   scale_            = 1.0;
   triggOnce_        = 0;
+  cycleCounter_     = 0;
+  ignoreCycles_     = 0;
+
+  ecmcSampleRateHz_ = getEcmcSampleRate();
+  cfgFFTSampleRateHz_ = ecmcSampleRateHz_;
+
   // Config defaults
   cfgDbgMode_       = 0;
   cfgNfft_          = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
@@ -92,6 +101,20 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   if(cfgNfft_ <= 0) {
     throw std::out_of_range("NFFT must be > 0 and even N^2.");
   }
+
+  // Check valid sample rate
+  if(cfgFFTSampleRateHz_ <= 0) {
+    throw std::out_of_range("FFT Invalid sample rate"); 
+  }
+  if(cfgFFTSampleRateHz_ > ecmcSampleRateHz_) {
+    printf("Warning FFT sample rate faster than ecmc rate. FFT rate will be set to ecmc rate.\n");
+    cfgFFTSampleRateHz_ = ecmcSampleRateHz_;
+  }
+
+  // Se if any data update cycles should be ignored
+  // example ecmc 1000Hz, fft 100Hz then ignore 9 cycles (could be strange if not multiples)
+  ignoreCycles_ = ecmcSampleRateHz_ / cfgFFTSampleRateHz_ -1;
+
   // set scale factor
   scale_ = 1.0 / cfgNfft_; // sqrt((double)cfgNfft_);
 
@@ -185,6 +208,12 @@ void ecmcFFT::parseConfigStr(char *configStr) {
         }
       }
 
+      // ECMC_PLUGIN_RATE_OPTION_CMD rate in HZ
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_RATE_OPTION_CMD, strlen(ECMC_PLUGIN_RATE_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_RATE_OPTION_CMD);
+        cfgFFTSampleRateHz_ = atof(pThisOption);
+      }
+
       pThisOption = pNextOption;
     }    
     free(pOptions);
@@ -202,6 +231,8 @@ void ecmcFFT::connectToDataSource() {
   if(!dataItem_) {
     throw std::runtime_error( "Data item NULL." );
   }
+  
+  dataItemInfo_ = dataItem_->getDataItemInfo();
 
   // Register data callback
   callbackHandle_ = dataItem_->regDataUpdatedCallback(f_dataUpdatedCallback, this);
@@ -220,10 +251,19 @@ void ecmcFFT::connectToDataSource() {
 void ecmcFFT::dataUpdatedCallback(uint8_t*       data, 
                                   size_t         size,
                                   ecmcEcDataType dt) {
+  
   // No buffer or full or not enabled
   if(!dataBuffer_ || !cfgEnable_) {
     return;
   }
+
+  // See if data should be ignored
+  if(cycleCounter_ < ignoreCycles_) {
+    cycleCounter_++;
+    return; // ignore this callback
+  }
+  cycleCounter_ = 0;
+
   if (cfgMode_ == TRIGG && !triggOnce_ ) {
     updateStatus(IDLE);
     return; // Wait for trigger from plc or asyn
@@ -718,3 +758,12 @@ void ecmcFFT::updateStatus(FFT_STATUS status) {
   status_ = status;
   asynFFTStat_->refreshParamRT(1);
 }
+
+// Do nut use this as same time as callback!
+void ecmcFFT::sampleData() {
+
+  dataUpdatedCallback(dataItemInfo_->data, 
+                      dataItemInfo_->dataSize,
+                      dataItemInfo_->dataType);
+}
+

@@ -61,9 +61,10 @@ void fftDestruct(void)
  *  Return value other than 0 will be considered to be an error code in ecmc.
  **/
 int fftRealtime(int ecmcError)
-{  
+{ 
   lastEcmcError = ecmcError;
-  return 0;
+  // Let all fft:s sample data
+  return 0; // sampleFFTs(); Use callback instead 
 }
 
 /** Link to data source here since all sources should be availabe at this stage
@@ -115,13 +116,14 @@ struct ecmcPluginData pluginDataDef = {
   // Description
   .desc = "FFT plugin for use with ecmc.",
   // Option description
-  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"<1/0> : Enables/disables printouts from plugin.\n"
-                "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source> : Sets source variable for FFT (example: ec0.s1.AI_1).\n"
-                "    "ECMC_PLUGIN_NFFT_OPTION_CMD"<nfft> : Data points to collect.\n" 
-                "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0> : Apply scale.\n" 
-                "    "ECMC_PLUGIN_DC_REMOVE_OPTION_CMD"<1/0> : Remove DC offset of input data (SOURCE).\n" 
-                "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0> : Enable data acq. and calcs (can be controlled over asyn)."
-                "    "ECMC_PLUGIN_MODE_OPTION_CMD"<CONT/TRIGG> : Continious or triggered mode."
+  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"<1/0>    : Enables/disables printouts from plugin, default = disabled.\n"
+                "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).\n"
+                "    "ECMC_PLUGIN_NFFT_OPTION_CMD"<nfft>        : Data points to collect, default = 4096.\n" 
+                "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0>  : Apply scale, defaults to disabled.\n" 
+                "    "ECMC_PLUGIN_DC_REMOVE_OPTION_CMD"<1/0>    : Remove DC offset of input data (SOURCE), default = disabled.\n" 
+                "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0>       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.\n"
+                "    "ECMC_PLUGIN_MODE_OPTION_CMD"<CONT/TRIGG>  : Continious or triggered mode, defaults to TRIGG\n"
+                "    "ECMC_PLUGIN_RATE_OPTION_CMD"<rate in hz>  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate."
                 , 
   // Plugin version
   .version = ECMC_EXAMPLE_PLUGIN_VERSION,
