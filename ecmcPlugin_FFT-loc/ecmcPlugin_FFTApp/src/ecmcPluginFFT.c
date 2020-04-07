@@ -116,10 +116,10 @@ struct ecmcPluginData pluginDataDef = {
   // Description
   .desc = "FFT plugin for use with ecmc.",
   // Option description
-  .optionDesc = "\n    "ECMC_PLUGIN_DBG_OPTION_CMD"<1/0>    : Enables/disables printouts from plugin, default = disabled.\n"
+  .optionDesc = "\n    "ECMC_PLUGIN_DBG_PRINT_OPTION_CMD"<1/0>    : Enables/disables printouts from plugin, default = disabled.\n"
                 "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).\n"
                 "    "ECMC_PLUGIN_NFFT_OPTION_CMD"<nfft>        : Data points to collect, default = 4096.\n" 
-                "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0>  : Apply scale, defaults to disabled.\n" 
+                "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0>  : Apply scale, default = disabled.\n" 
                 "    "ECMC_PLUGIN_DC_REMOVE_OPTION_CMD"<1/0>    : Remove DC offset of input data (SOURCE), default = disabled.\n" 
                 "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0>       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.\n"
                 "    "ECMC_PLUGIN_MODE_OPTION_CMD"<CONT/TRIGG>  : Continious or triggered mode, defaults to TRIGG\n"
@@ -282,7 +282,7 @@ struct ecmcPluginData pluginDataDef = {
       },
   /* TRIGGERED MODE = 2 */
   .consts[5] = {
-        .constName = "fft_TRIGG",
+        .constName = "fft_CALC",
         .constDesc = "FFT Status: Calculating result",
         .constValue = CALC
       },

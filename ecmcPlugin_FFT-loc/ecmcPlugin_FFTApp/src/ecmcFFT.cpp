@@ -161,9 +161,9 @@ void ecmcFFT::parseConfigStr(char *configStr) {
         pNextOption++;       /* Jump to (possible) next */
       }
       
-      // ECMC_PLUGIN_DBG_OPTION_CMD (1/0)
-      if (!strncmp(pThisOption, ECMC_PLUGIN_DBG_OPTION_CMD, strlen(ECMC_PLUGIN_DBG_OPTION_CMD))) {
-        pThisOption += strlen(ECMC_PLUGIN_DBG_OPTION_CMD);
+      // ECMC_PLUGIN_DBG_PRINT_OPTION_CMD (1/0)
+      if (!strncmp(pThisOption, ECMC_PLUGIN_DBG_PRINT_OPTION_CMD, strlen(ECMC_PLUGIN_DBG_PRINT_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_DBG_PRINT_OPTION_CMD);
         cfgDbgMode_ = atoi(pThisOption);
       } 
       
