@@ -45,7 +45,7 @@ class ecmcFFT {
   FFT_STATUS            getStatusFFT();
   void                  clearBuffers();
   void                  triggFFT();
-  
+  void                  doCalcWorker();  // Called from worker thread calc the results
   /** Do not use this as same time as callback!
   * if used it should be called from ecmc realtime callback*/
   void                  sampleData();

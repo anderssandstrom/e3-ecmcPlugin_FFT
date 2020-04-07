@@ -27,6 +27,8 @@
 #include "ecmcFFT.h"
 #include "ecmcPluginClient.h"
 #include "ecmcAsynPortDriver.h"
+#include "epicsThread.h"
+
 
 // New data callback from ecmc
 static int printMissingObjError = 1;
@@ -48,6 +50,15 @@ void f_dataUpdatedCallback(uint8_t* data, size_t size, ecmcEcDataType dt, void* 
   fftObj->dataUpdatedCallback(data,size,dt);
 }
 
+void f_worker(void *obj) {
+  if(!obj) {
+    printf("%s/%s:%d: Error: Worker thread FFT object NULL..\n",
+            __FILE__, __FUNCTION__, __LINE__);
+    return;
+  }
+  ecmcFFT * fftObj = (ecmcFFT*)obj;
+  fftObj->doCalcWorker();
+}
 
 /** ecmc FFT class
  * This object can throw: 
@@ -127,7 +138,13 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
 
   // Allocate KissFFT
   fftDouble_ = new kissfft<double>(cfgNfft_,false);
-
+  
+  // Create worker thread
+  std::string threadname = "ecmc." + ECMC_PLUGIN_ASYN_PREFIX +to_string(objectId_);
+  if(epicsThreadCreate(threadname.c_str(), 0, 32768, f_worker, this) == NULL) {
+    throw std::runtime_error("Error: Failed create worker thread.");
+  }
+  
   initAsyn();
 }
 
@@ -793,3 +810,9 @@ void ecmcFFT::sampleData() {
                       dataItemInfo_->dataType);
 }
 
+// Called from worker thread
+void ecmcFFT::doCalcWorker() {
+  while(true) {
+    sleep(10);
+  } 
+}
