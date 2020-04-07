@@ -116,7 +116,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   ignoreCycles_ = ecmcSampleRateHz_ / cfgFFTSampleRateHz_ -1;
 
   // set scale factor
-  scale_ = 1.0 / cfgNfft_; // sqrt((double)cfgNfft_);
+  scale_ = 1.0 / ((double)cfgNfft_); // sqrt((double)cfgNfft_);
 
   // Allocate buffers
   dataBuffer_      = new double[cfgNfft_];               // Raw input data (real)
@@ -284,7 +284,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
       updateStatus(CALC);
 
       // **** Breakout to sperate low prio work thread below
-      removeDCOffset();
+      removeDCOffset();  // Remove dc on rawdata
       calcFFT();      // FFT cacluation
       scaleFFT();     // Scale FFT
       calcFFTAmp();   // Calculate amplitude from complex 
@@ -298,12 +298,12 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 
       if(cfgDbgMode_){
         printComplexArray(fftBuffer_,
-                    cfgNfft_,
-                    objectId_);
-        printEcDataArray((uint8_t*)dataBuffer_,
-                          cfgNfft_*sizeof(double),
-                          ECMC_EC_F64,
+                          cfgNfft_,
                           objectId_);
+        printEcDataArray((uint8_t*)dataBuffer_,
+                         cfgNfft_*sizeof(double),
+                         ECMC_EC_F64,
+                         objectId_);
       }
 
       // If mode continious then start over
