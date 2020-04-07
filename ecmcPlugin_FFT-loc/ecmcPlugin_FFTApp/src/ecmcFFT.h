@@ -84,7 +84,8 @@ class ecmcFFT {
   ecmcAsynDataItem*     asynEnable_;       // Enable/disable acq./calcs
   ecmcAsynDataItem*     asynRawData_;      // Raw data (input) array (double)
   ecmcAsynDataItem*     asynFFTAmp_;       // FFT amplitude array (double)
-  ecmcAsynDataItem*     asynFFTMode_;      // FFT mode cont/trigg
+  ecmcAsynDataItem*     asynFFTMode_;      // FFT mode (cont/trigg)
+  ecmcAsynDataItem*     asynFFTStat_;      // FFT status (no_stat/idle/acq/calc)
 
   // Some generic utility functions
   static uint8_t        getUint8(uint8_t* data);

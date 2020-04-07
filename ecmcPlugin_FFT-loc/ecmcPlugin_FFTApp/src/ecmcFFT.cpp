@@ -19,6 +19,7 @@
 #define ECMC_PLUGIN_ASYN_RAWDATA  "rawdata"
 #define ECMC_PLUGIN_ASYN_FFT_AMP  "fftamplitude"
 #define ECMC_PLUGIN_ASYN_FFT_MODE "mode"
+#define ECMC_PLUGIN_ASYN_FFT_STAT "status"
 
 #include <sstream>
 #include "ecmcFFT.h"
@@ -65,9 +66,11 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   dataItem_         = NULL;
   fftDouble_        = NULL;
   asynPort_         = NULL;
-  asynEnable_       = NULL;
+  asynEnable_       = NULL;  // Enable
   asynRawData_      = NULL;  // Input data
   asynFFTAmp_       = NULL;  // Result
+  asynFFTMode_      = NULL;  // Mode
+  asynFFTStat_      = NULL;  // Status
   status_           = NO_STAT;
   elementsInBuffer_ = 0;
   fftCalcDone_      = 0;
@@ -634,6 +637,24 @@ void ecmcFFT::initAsyn() {
 
   asynFFTMode_->setAllowWriteToEcmc(true);
   asynFFTMode_->refreshParam(1); // read once into asyn param lib
+
+// Add fft mode "plugin.fft%d.status"
+  paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
+             "." + ECMC_PLUGIN_ASYN_FFT_STAT;
+  
+  asynFFTStat_ = asynPort_->addNewAvailParam(paramName.c_str(),   // name
+                                             asynParamInt32,      // asyn type 
+                                             (uint8_t *)status_, // pointer to data
+                                             sizeof(status_),    // size of data
+                                             ECMC_EC_S32,         // ecmc data type
+                                             0);                  // die if fail
+
+  if(!asynFFTStat_) {
+    throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
+  }
+
+  asynFFTStat_->setAllowWriteToEcmc(false);
+  asynFFTStat_->refreshParam(1); // read once into asyn param lib
 }
 
 // Avoid issues with std:to_string()
