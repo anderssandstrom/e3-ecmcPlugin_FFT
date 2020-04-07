@@ -686,7 +686,7 @@ void ecmcFFT::initAsyn() {
   asynTrigg_ = asynPort_->addNewAvailParam(paramName.c_str(),     // name
                                            asynParamInt32,        // asyn type 
                                            (uint8_t *)triggOnce_, // pointer to data
-                                           strlen(triggOnce_),    // size of data
+                                           sizeof(triggOnce_),    // size of data
                                            ECMC_EC_S32,           // ecmc data type
                                            0);                    // die if fail
 
