@@ -58,7 +58,7 @@ void f_dataUpdatedCallback(uint8_t* data, size_t size, ecmcEcDataType dt, void* 
 ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is created)
                  char* configStr) {
   cfgDataSourceStr_ = NULL;
-  dataBuffer_       = NULL;
+  rawDataBuffer_       = NULL;
   dataItem_         = NULL;
   dataItemInfo_     = NULL;
   fftDouble_        = NULL;
@@ -119,9 +119,10 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   scale_ = 1.0 / ((double)cfgNfft_); // sqrt((double)cfgNfft_);
 
   // Allocate buffers
-  dataBuffer_      = new double[cfgNfft_];               // Raw input data (real)
-  fftBuffer_       = new std::complex<double>[cfgNfft_]; // FFT result (complex)
-  fftBufferAmp_    = new double[cfgNfft_];               // FFT result amplitude (real)
+  rawDataBuffer_      = new double[cfgNfft_];               // Raw input data (real)
+  fftBufferInput_     = new std::complex<double>[cfgNfft_]; // FFT input  (complex)
+  fftBufferResult_    = new std::complex<double>[cfgNfft_]; // FFT result (complex)
+  fftBufferResultAmp_ = new double[cfgNfft_];               // FFT result amplitude (real)
   clearBuffers();
 
   // Allocate KissFFT
@@ -131,8 +132,8 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
 }
 
 ecmcFFT::~ecmcFFT() {
-  if(dataBuffer_) {
-    delete[] dataBuffer_;
+  if(rawDataBuffer_) {
+    delete[] rawDataBuffer_;
   }
   // De regeister callback when unload
   if(callbackHandle_ >= 0) {
@@ -143,6 +144,9 @@ ecmcFFT::~ecmcFFT() {
   }
   if(fftDouble_) {
     delete fftDouble_;
+  }
+  if (fftBufferInput_){
+    delete[] fftBufferInput_;
   }
 }
 
@@ -253,7 +257,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
                                   ecmcEcDataType dt) {
   
   // No buffer or full or not enabled
-  if(!dataBuffer_ || !cfgEnable_) {
+  if(!rawDataBuffer_ || !cfgEnable_) {
     return;
   }
 
@@ -297,10 +301,10 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
       asynFFTAmp_->refreshParamRT(1);  // Forced update (do not consider record rate)
 
       if(cfgDbgMode_){
-        printComplexArray(fftBuffer_,
+        printComplexArray(fftBufferResult_,
                           cfgNfft_,
                           objectId_);
-        printEcDataArray((uint8_t*)dataBuffer_,
+        printEcDataArray((uint8_t*)rawDataBuffer_,
                          cfgNfft_*sizeof(double),
                          ECMC_EC_F64,
                          objectId_);
@@ -360,25 +364,29 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 }
 
 void ecmcFFT::addDataToBuffer(double data) {
-  if(dataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
-    dataBuffer_[elementsInBuffer_] = data;
+  if(rawDataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
+    rawDataBuffer_[elementsInBuffer_] = data;
+    fftBufferInput_[elementsInBuffer_].real(data);
+    fftBufferInput_[elementsInBuffer_].imag(0);
   }
   elementsInBuffer_ ++;
 }
 
 void ecmcFFT::clearBuffers() {
-  memset(dataBuffer_,   0, cfgNfft_ * sizeof(double));
-  memset(fftBufferAmp_, 0, cfgNfft_ * sizeof(double));
+  memset(rawDataBuffer_,   0, cfgNfft_ * sizeof(double));
+  memset(fftBufferResultAmp_, 0, cfgNfft_ * sizeof(double));
   for(unsigned int i = 0; i < cfgNfft_; ++i) {
-    fftBuffer_[i].real(0);
-    fftBuffer_[i].imag(0);
+    fftBufferResult_[i].real(0);
+    fftBufferResult_[i].imag(0);
+    fftBufferInput_[i].real(0);
+    fftBufferInput_[i].imag(0);
   }
   elementsInBuffer_ = 0;
   fftCalcDone_      = 0;
 }
 
 void ecmcFFT::calcFFT() {
-  fftDouble_->transform_real(dataBuffer_, fftBuffer_);
+  fftDouble_->transform(fftBufferInput_, fftBufferResult_);
   fftCalcDone_ = 1;
 }
 
@@ -388,13 +396,13 @@ void ecmcFFT::scaleFFT() {
   }
 
   for(unsigned int i = 0 ; i < cfgNfft_ ; ++i ) {
-    fftBuffer_[i] = fftBuffer_[i] * scale_;
+    fftBufferResult_[i] = fftBufferResult_[i] * scale_;
   }
 }
 
 void ecmcFFT::calcFFTAmp() {  
   for(unsigned int i = 0 ; i < cfgNfft_ ; ++i ) {
-    fftBufferAmp_[i] = std::abs(fftBuffer_[i]);
+    fftBufferResultAmp_[i] = std::abs(fftBufferResult_[i]);
   }
 }
 
@@ -406,11 +414,11 @@ void ecmcFFT::removeDCOffset() {
   // calc average of raw data
   double sum = 0;
   for(unsigned int i = 0; i < cfgNfft_; ++i ) {
-    sum += dataBuffer_[i];
+    sum += fftBufferInput_[i].real();
   }
   double avg = sum / ((double)cfgNfft_);
-  for(unsigned int i = 0; i < cfgNfft_; ++i ) {
-    dataBuffer_[i]-=avg;
+  for(unsigned int i = 0; i < cfgNfft_; ++i ) {    
+    fftBufferInput_[i].real(fftBufferInput_[i].real()-avg);
   }
 }
 
@@ -646,7 +654,7 @@ void ecmcFFT::initAsyn() {
   
   asynRawData_ = asynPort_->addNewAvailParam(paramName.c_str(),       // name
                                              asynParamFloat64Array,   // asyn type 
-                                             (uint8_t *)dataBuffer_,  // pointer to data
+                                             (uint8_t *)rawDataBuffer_,  // pointer to data
                                              cfgNfft_*sizeof(double), // size of data
                                              ECMC_EC_F64,             // ecmc data type
                                              0);                      // die if fail
@@ -663,7 +671,7 @@ void ecmcFFT::initAsyn() {
   
   asynFFTAmp_ = asynPort_->addNewAvailParam(paramName.c_str(),        // name
                                             asynParamFloat64Array,    // asyn type 
-                                            (uint8_t *)fftBufferAmp_, // pointer to data
+                                            (uint8_t *)fftBufferResultAmp_, // pointer to data
                                             cfgNfft_*sizeof(double),  // size of data
                                             ECMC_EC_F64,              // ecmc data type
                                             0);                       // die if fail

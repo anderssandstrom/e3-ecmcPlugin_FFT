@@ -65,9 +65,10 @@ class ecmcFFT {
   ecmcDataItemInfo     *dataItemInfo_;
   ecmcAsynPortDriver   *asynPort_;
   kissfft<double>*      fftDouble_;
-  double*               dataBuffer_;    // Input data (real)
-  std::complex<double>* fftBuffer_;     // Result (complex)
-  double*               fftBufferAmp_;  // Resulting amplitude (abs of fftBuffer_)
+  double*               rawDataBuffer_;      // Input data (real)
+  std::complex<double>* fftBufferInput_;     // Result (complex)
+  std::complex<double>* fftBufferResult_;    // Result (complex)
+  double*               fftBufferResultAmp_; // Resulting amplitude (abs of fftBufferResult_)
   size_t                elementsInBuffer_;
   double                ecmcSampleRateHz_;
   // ecmc callback handle for use when deregister at unload
