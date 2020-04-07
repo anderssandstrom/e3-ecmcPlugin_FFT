@@ -284,6 +284,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
       updateStatus(CALC);
 
       // **** Breakout to sperate low prio work thread below
+      removeDCOffset();
       calcFFT();      // FFT cacluation
       scaleFFT();     // Scale FFT
       calcFFTAmp();   // Calculate amplitude from complex 
@@ -396,6 +397,23 @@ void ecmcFFT::calcFFTAmp() {
     fftBufferAmp_[i] = std::abs(fftBuffer_[i]);
   }
 }
+
+void ecmcFFT::removeDCOffset() {
+  if(!cfgDcRemove_) {
+    return;
+  }
+
+  // calc average of raw data
+  double sum = 0;
+  for(unsigned int i = 0; i < cfgNfft_; ++i ) {
+    sum += dataBuffer_[i];
+  }
+  double avg = sum / ((double)cfgNfft_);
+  for(unsigned int i = 0; i < cfgNfft_; ++i ) {
+    dataBuffer_[i]-=avg;
+  }
+}
+
 
 void ecmcFFT::printEcDataArray(uint8_t*       data, 
                                size_t         size,

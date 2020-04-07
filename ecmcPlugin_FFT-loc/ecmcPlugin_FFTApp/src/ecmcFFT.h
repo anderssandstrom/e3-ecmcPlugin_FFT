@@ -56,6 +56,7 @@ class ecmcFFT {
   void                  calcFFT();
   void                  scaleFFT();
   void                  calcFFTAmp();
+  void                  removeDCOffset();
   void                  initAsyn();
   void                  updateStatus(FFT_STATUS status);  // Also updates asynparam
   static int            dataTypeSupported(ecmcEcDataType dt);
