@@ -69,6 +69,7 @@ class ecmcFFT {
   std::complex<double>* fftBufferInput_;     // Result (complex)
   std::complex<double>* fftBufferResult_;    // Result (complex)
   double*               fftBufferResultAmp_; // Resulting amplitude (abs of fftBufferResult_)
+  double*               fftBufferXAxis_;     // FFT x axis with freqs
   size_t                elementsInBuffer_;
   double                ecmcSampleRateHz_;
   // ecmc callback handle for use when deregister at unload
@@ -99,6 +100,7 @@ class ecmcFFT {
   ecmcAsynDataItem*     asynFFTStat_;      // FFT status (no_stat/idle/acq/calc)
   ecmcAsynDataItem*     asynSource_;       // SOURCE
   ecmcAsynDataItem*     asynTrigg_;        // Trigg new measurement
+  ecmcAsynDataItem*     asynFFTXAxis_;     // FFT X-axis frequencies
 
   // Some generic utility functions
   static uint8_t        getUint8(uint8_t* data);

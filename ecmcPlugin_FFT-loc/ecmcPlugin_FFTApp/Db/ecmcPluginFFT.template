@@ -46,6 +46,19 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-Amp-Act"){
   field(TSE,  "$(TSE=-2)")
 }
 
+# FFT xaxis
+record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-X-Axis-Act"){
+  info(asyn:FIFO, "1000")
+  field(DESC, "Raw data")
+  field(PINI, "1")
+  field(DTYP, "asynFloat64ArrayIn")
+  field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1000))T_SMP_MS=$(T_SMP_MS=1000)/TYPE=asynFloat64ArrayIn/plugin.fft${INDEX}.fftxaxis?")
+  field(FTVL, "DOUBLE")
+  field(NELM, "$(NELM)")
+  field(SCAN, "I/O Intr")
+  field(TSE,  "$(TSE=-2)")
+}
+
 record(bo,"$(P)Plugin-FFT${INDEX}-Enable"){
   field(DESC, "FFT Enable")
   field(DTYP,"asynInt32")
