@@ -36,6 +36,7 @@ Example:
 
 ```
 This plugin supports multiple loading. For each load of the plugin a new FFT object will be created. In order to access these plugins, from plc:s or EPICS records, they can be accessed by an index. The first FFT plugin will have index 0. The next loaded FFT plugin will have index 1...
+
 Note: If another plugin is loaded in between this will have no affect on these FFT indexes (so the FFT index is _not_ the same as plugin index).
 
 ## Configuration
@@ -82,20 +83,6 @@ Defines number of samples for each measurement. Default setting is 4096.
 Exmaple: 1024
 ```
 "NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
-```
-### APPLY_SCALE
-Apply scaling in order to get correct amplitude of fft. Disabled as default (lower cpu usage).
-
-Exmaple: Enable### DC_REMOVE
-Remove DC of input signal. Default is disabled.
-
-Exmaple: Enable
-```
-"DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
-```
-
-```
-"APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 ### APPLY_SCALE
 Apply scaling in order to get correct amplitude of fft. Disabled as default (lower cpu usage).
