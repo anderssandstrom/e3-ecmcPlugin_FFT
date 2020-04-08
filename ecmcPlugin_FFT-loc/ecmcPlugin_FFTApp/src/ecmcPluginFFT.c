@@ -63,8 +63,7 @@ void fftDestruct(void)
 int fftRealtime(int ecmcError)
 { 
   lastEcmcError = ecmcError;
-  // Let all fft:s sample data
-  return 0; // sampleFFTs(); Use callback instead 
+  return 0;
 }
 
 /** Link to data source here since all sources should be availabe at this stage

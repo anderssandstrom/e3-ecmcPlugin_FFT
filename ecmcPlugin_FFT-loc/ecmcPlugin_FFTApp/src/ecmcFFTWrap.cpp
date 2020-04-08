@@ -131,19 +131,3 @@ FFT_STATUS  statFFT(int fftIndex) {
   }  
   return NO_STAT;
 }
-
-int sampleFFTs() {
-  for(std::vector<ecmcFFT*>::iterator pfft = ffts.begin(); pfft != ffts.end(); ++pfft) {
-    if(*pfft) {
-      try {
-        (*pfft)->sampleData();
-      }
-      catch(std::exception& e) {
-        printf("Exception: %s. Plugin will unload.\n",e.what());
-        return ECMC_PLUGIN_FFT_ERROR_CODE;
-      }
-    }
-  }
-  return 0;
-}
-

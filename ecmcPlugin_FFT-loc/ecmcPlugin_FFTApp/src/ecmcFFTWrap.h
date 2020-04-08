@@ -88,12 +88,6 @@ int         triggFFT(int fftIndex);
  */
 FFT_STATUS  statFFT(int fftIndex);
 
-/** \brief Sample data in all FFT objects
- *  
- *  This function should be executed in the realtime callback from ecmc.\
- */
-int sampleFFTs();
-
 /** \brief Link data to _all_ fft objects
  *
  *  This tells the FFT lib to connect to ecmc to find it's data source.\n

@@ -90,15 +90,6 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   dataItem_         = NULL;
   dataItemInfo_     = NULL;
   fftDouble_        = NULL;
-  // asynPort_         = NULL;
-  // asynEnable_       = NULL;  // Enable
-  // asynRawData_      = NULL;  // Input data
-  // asynFFTAmp_       = NULL;  // Result
-  // asynFFTMode_      = NULL;  // Mode
-  // asynFFTStat_      = NULL;  // Status
-  // asynSource_       = NULL;  // Source
-  // asynTrigg_        = NULL;  // Trigg new measurement
-  // asynFFTXAxis_     = NULL;  // Result x axis
   status_           = NO_STAT;
   elementsInBuffer_ = 0;
   fftWaitingForCalc_= 0;
@@ -110,7 +101,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cycleCounter_     = 0;
   ignoreCycles_     = 0;
 
-  // New asyn
+  // Asyn
   asynEnableId_     = -1;    // Enable/disable acq./calcs
   asynRawDataId_    = -1;    // Raw data (input) array (double)
   asynFFTAmpId_     = -1;    // FFT amplitude array (double)
@@ -130,11 +121,6 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cfgApplyScale_    = 1;   // Scale as default to get correct amplitude in fft
   cfgEnable_        = 0;   // start disabled (enable over asyn)
   cfgMode_          = TRIGG;
-
-  // asynPort_         = (ecmcAsynPortDriver*) getEcmcAsynPortDriver();
-  // if(!asynPort_) {
-  //   throw std::runtime_error("Asyn port NULL");
-  // }
 
   parseConfigStr(configStr); // Assigns all configs
   // Check valid nfft
@@ -186,7 +172,7 @@ ecmcFFT::~ecmcFFT() {
   if(rawDataBuffer_) {
     delete[] rawDataBuffer_;
   }
-  // De regeister callback when unload
+  // De register callback when unload
   if(callbackHandle_ >= 0) {
     dataItem_->deregDataUpdatedCallback(callbackHandle_);
   }
@@ -300,15 +286,6 @@ void ecmcFFT::connectToDataSource() {
     throw std::invalid_argument( "Data type not supported." );
   }
 
-  //fill x axis buffer with freqs
-  double freq = 0;
-  double deltaFreq = ecmcSampleRateHz_* ((double)dataItemInfo_->dataSize / 
-                     (double)dataItemInfo_->dataElementSize) / ((double)(cfgNfft_));
-  for(unsigned int i = 0; i < (cfgNfft_ / 2 + 1); ++i) {
-    fftBufferXAxis_[i] = freq;
-    freq = freq + deltaFreq;
-  }
-
   updateStatus(IDLE);
 }
 
@@ -413,7 +390,7 @@ void ecmcFFT::addDataToBuffer(double data) {
 void ecmcFFT::clearBuffers() {
   memset(rawDataBuffer_,   0, cfgNfft_ * sizeof(double));
   memset(fftBufferResultAmp_, 0, (cfgNfft_ / 2 + 1) * sizeof(double));
-  // memset(fftBufferXAxis_, 0, (cfgNfft_ / 2 + 1) * sizeof(double));  
+  memset(fftBufferXAxis_, 0, (cfgNfft_ / 2 + 1) * sizeof(double));  
   for(unsigned int i = 0; i < cfgNfft_; ++i) {
     fftBufferResult_[i].real(0);
     fftBufferResult_[i].imag(0);
@@ -441,6 +418,18 @@ void ecmcFFT::calcFFTAmp() {
   for(unsigned int i = 0 ; i < cfgNfft_ / 2 + 1 ; ++i ) {
     fftBufferResultAmp_[i] = std::abs(fftBufferResult_[i]);
   }
+}
+
+// Should be enough todo once
+void ecmcFFT::calcFFTXAxis() {
+  //fill x axis buffer with freqs
+  double freq = 0;
+  double deltaFreq = ecmcSampleRateHz_* ((double)dataItemInfo_->dataSize / 
+                     (double)dataItemInfo_->dataElementSize) / ((double)(cfgNfft_));
+  for(unsigned int i = 0; i < (cfgNfft_ / 2 + 1); ++i) {
+    fftBufferXAxis_[i] = freq;
+    freq = freq + deltaFreq;
+  }  
 }
 
 void ecmcFFT::removeDCOffset() {
@@ -734,159 +723,11 @@ void ecmcFFT::initAsyn() {
   if( createParam(0, paramName.c_str(), asynParamFloat64Array, &asynFFTXAxisId_ ) != asynSuccess ) {
     throw std::runtime_error("Failed create asyn parameter xaxisfreqs");
   }
-  doCallbacksFloat64Array(fftBufferXAxis_,cfgNfft_/2+1, asynFFTXAxisId_,0);
+  doCallbacksFloat64Array(fftBufferXAxis_,cfgNfft_ / 2 + 1, asynFFTXAxisId_,0);
 
   // Update integers
   callParamCallbacks();
 }
-
-// void ecmcFFT::initAsyn() {
-  
-//   if(!asynPort_) {
-//     throw std::runtime_error("Asyn port NULL");
-//   }
-  
-//   // Add enable "plugin.fft%d.enable"
-//   std::string paramName =ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_ENABLE;
-//   asynEnable_ = asynPort_->addNewAvailParam(paramName.c_str(),        // name
-//                                             asynParamInt32,           // asyn type 
-//                                             (uint8_t *)&(cfgEnable_), // pointer to data
-//                                             sizeof(cfgEnable_),       // size of data
-//                                             ECMC_EC_S32,              // ecmc data type
-//                                             0);                       // die if fail
-
-//   if(!asynEnable_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }
-//   asynEnable_->setAllowWriteToEcmc(true);
-//   asynEnable_->refreshParam(1); // read once into asyn param lib
-
-//   // Add rawdata "plugin.fft%d.rawdata"
-//   paramName =ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_RAWDATA;
-  
-//   asynRawData_ = asynPort_->addNewAvailParam(paramName.c_str(),       // name
-//                                              asynParamFloat64Array,   // asyn type 
-//                                              (uint8_t *)rawDataBuffer_,  // pointer to data
-//                                              cfgNfft_*sizeof(double), // size of data
-//                                              ECMC_EC_F64,             // ecmc data type
-//                                              0);                      // die if fail
-
-//   if(!asynRawData_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }
-//   asynRawData_->setAllowWriteToEcmc(false);
-//   asynRawData_->refreshParam(1); // read once into asyn param lib
-  
-//   // Add fft amplitude "plugin.fft%d.fftamplitude"
-//   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_FFT_AMP;
-  
-//   asynFFTAmp_ = asynPort_->addNewAvailParam(paramName.c_str(),              // name
-//                                             asynParamFloat64Array,          // asyn type 
-//                                             (uint8_t *)fftBufferResultAmp_, // pointer to data
-//                                             (cfgNfft_ / 2 + 1)*sizeof(double), // size of data
-//                                             ECMC_EC_F64,                    // ecmc data type
-//                                             0);                            // die if fail
-
-//   if(!asynFFTAmp_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }
-
-//   asynFFTAmp_->setAllowWriteToEcmc(false);
-//   asynFFTAmp_->refreshParam(1); // read once into asyn param lib
-
-//   // Add fft mode "plugin.fft%d.mode"
-//   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_FFT_MODE;
-  
-//   asynFFTMode_ = asynPort_->addNewAvailParam(paramName.c_str(),      // name
-//                                              asynParamInt32,         // asyn type 
-//                                              (uint8_t *)(&cfgMode_), // pointer to data
-//                                              sizeof(cfgMode_),       // size of data
-//                                              ECMC_EC_S32,            // ecmc data type
-//                                              0);                     // die if fail
-
-//   if(!asynFFTMode_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }
-
-//   asynFFTMode_->setAllowWriteToEcmc(true);
-//   asynFFTMode_->refreshParam(1); // read once into asyn param lib
-
-//   // Add fft mode "plugin.fft%d.status"
-//   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_FFT_STAT;
-  
-//   asynFFTStat_ = asynPort_->addNewAvailParam(paramName.c_str(),      // name
-//                                              asynParamInt32,         // asyn type 
-//                                              (uint8_t *)(&status_),  // pointer to data
-//                                              sizeof(status_),        // size of data
-//                                              ECMC_EC_S32,            // ecmc data type
-//                                              0);                     // die if fail
-
-//   if(!asynFFTStat_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }
-
-//   asynFFTStat_->setAllowWriteToEcmc(false);
-//   asynFFTStat_->refreshParam(1); // read once into asyn param lib
-
-//   // Add fft mode "plugin.fft%d.status"
-//   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_FFT_SOURCE;
-  
-//   asynSource_ = asynPort_->addNewAvailParam(paramName.c_str(),            // name
-//                                             asynParamInt8Array,           // asyn type 
-//                                             (uint8_t *)cfgDataSourceStr_, // pointer to data
-//                                             strlen(cfgDataSourceStr_),    // size of data
-//                                             ECMC_EC_U8,                   // ecmc data type
-//                                             0);                           // die if fail
-
-//   if(!asynSource_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }doCallbacksFloat64Array(rawDataBuffer_,cfgNfft_, asynRawDataId_,0);
-
-//   asynSource_->setAllowWriteToEcmc(false);
-//   asynSource_->refreshParam(1); // read once into asyn param lib
-
-//   // Add fft mode "plugin.fft%d.trigg"
-//   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_FFT_TRIGG;
-  
-//   asynTrigg_ = asynPort_->addNewAvailParam(paramName.c_str(),        // name
-//                                            asynParamInt32,           // asyn type 
-//                                            (uint8_t *)(&triggOnce_), // pointer to data
-//                                            sizeof(triggOnce_),       // size of data
-//                                            ECMC_EC_S32,              // ecmc data type
-//                                            0);                       // die if fail
-
-//   if(!asynTrigg_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }
-
-//   asynTrigg_->setAllowWriteToEcmc(true);
-//   asynTrigg_->refreshParam(1); // read once into asyn param lib
-
-//   // Add fft mode "plugin.fft%d.xaxisfreqs"
-//   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
-//              "." + ECMC_PLUGIN_ASYN_FFT_X_FREQS;
-  
-//   asynFFTXAxis_ = asynPort_->addNewAvailParam(paramName.c_str(),           // name
-//                                               asynParamFloat64Array,       // asyn type 
-//                                               (uint8_t *)fftBufferXAxis_,  // pointer to data
-//                                               (cfgNfft_ / 2 + 1) * sizeof(double), // size of data
-//                                               ECMC_EC_F64,                 // ecmc data type
-//                                               0);                          // die if fail
-
-//   if(!asynFFTXAxis_) {
-//     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
-//   }
-
-//   asynFFTXAxis_->setAllowWriteToEcmc(false);
-//   asynFFTXAxis_->refreshParam(1); // read once into asyn param lib  
-// }
 
 // Avoid issues with std:to_string()
 std::string ecmcFFT::to_string(int value) {
@@ -919,20 +760,11 @@ void ecmcFFT::updateStatus(FFT_STATUS status) {
   callParamCallbacks();
 }
 
-// Do nut use this as same time as callback!
-void ecmcFFT::sampleData() {
-
-  dataUpdatedCallback(dataItemInfo_->data, 
-                      dataItemInfo_->dataSize,
-                      dataItemInfo_->dataType);
-}
-
 // Called from worker thread. Makes the hard work
 void ecmcFFT::doCalcWorker() {
 
   while(true) {
     doCalcEvent_.wait();
-    printf("STARTING NEW CALC in worker for object %d###############################\n",objectId_);    
     if(destructs_) {
       break;
     }
@@ -941,16 +773,13 @@ void ecmcFFT::doCalcWorker() {
     calcFFT();         // FFT cacluation
     scaleFFT();        // Scale FFT
     calcFFTAmp();      // Calculate amplitude from complex
+    calcFFTXAxis();    // Calculate x axis
 
-    // NOTE these calls should not be here.. since they belong to other thread
-    // Update asyn with both input and result
-    triggOnce_ = 0;    // Wait for next trigger if in trigg mode
-   
-    doCallbacksFloat64Array(rawDataBuffer_,cfgNfft_, asynRawDataId_,0);
-    doCallbacksFloat64Array(fftBufferResultAmp_,cfgNfft_/2+1, asynFFTAmpId_,0);
-
-    printf("END CALC in worker for object %d###############################\n",objectId_);    
-
+    setIntegerParam(asynTriggId_,triggOnce_);
+    doCallbacksFloat64Array(rawDataBuffer_,     cfgNfft_,     asynRawDataId_, 0);
+    doCallbacksFloat64Array(fftBufferResultAmp_,cfgNfft_/2+1, asynFFTAmpId_,  0);
+    doCallbacksFloat64Array(fftBufferXAxis_,    cfgNfft_/2+1, asynFFTXAxisId_,0);
+    callParamCallbacks();    
     if(cfgDbgMode_){
       printComplexArray(fftBufferResult_,
                         cfgNfft_,
@@ -958,9 +787,9 @@ void ecmcFFT::doCalcWorker() {
       printEcDataArray((uint8_t*)rawDataBuffer_,
                        cfgNfft_*sizeof(double),
                        ECMC_EC_F64,
-                       objectId_);
-    
+                       objectId_);    
     }
+    triggOnce_ = 0;    // Wait for next trigger if in trigg mode
     clearBuffers();
     fftWaitingForCalc_ = 0;
   } 
