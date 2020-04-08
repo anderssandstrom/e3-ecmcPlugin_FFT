@@ -20,7 +20,7 @@
 #include <string>
 #include "kissfft/kissfft.hh"
 
-class ecmcFFT {
+class ecmcFFT : public asynPortDriver {
  public:
 
   /** ecmc FFT class
@@ -31,7 +31,8 @@ class ecmcFFT {
    *    - out_of_range
   */
   ecmcFFT(int   fftIndex,    // index of this object  
-          char* configStr);
+          char* configStr,
+          char* portName);
   ~ecmcFFT();  
 
   // Add data to buffer (called from "external" callback)
@@ -49,6 +50,13 @@ class ecmcFFT {
   /** Do not use this as same time as callback!
   * if used it should be called from ecmc realtime callback*/
   void                  sampleData();
+  virtual asynStatus    writeInt32(asynUser *pasynUser, epicsInt32 value);
+  virtual asynStatus    readInt32(asynUser *pasynUser, epicsInt32 *value);
+  virtual asynStatus    readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,
+                                         size_t nElements, size_t *nIn);
+  virtual asynStatus readInt8Array(asynUser *pasynUser, epicsInt8 *value, 
+                                   size_t nElements, size_t *nIn);
+
 
  private:
   void                  parseConfigStr(char *configStr);
@@ -94,14 +102,24 @@ class ecmcFFT {
   double                cfgFFTSampleRateHz_; // Config: Sample rate (defaukts to ecmc rate)
 
   // Asyn
-  ecmcAsynDataItem*     asynEnable_;       // Enable/disable acq./calcs
-  ecmcAsynDataItem*     asynRawData_;      // Raw data (input) array (double)
-  ecmcAsynDataItem*     asynFFTAmp_;       // FFT amplitude array (double)
-  ecmcAsynDataItem*     asynFFTMode_;      // FFT mode (cont/trigg)
-  ecmcAsynDataItem*     asynFFTStat_;      // FFT status (no_stat/idle/acq/calc)
-  ecmcAsynDataItem*     asynSource_;       // SOURCE
-  ecmcAsynDataItem*     asynTrigg_;        // Trigg new measurement
-  ecmcAsynDataItem*     asynFFTXAxis_;     // FFT X-axis frequencies
+//   ecmcAsynDataItem*     asynEnable_;       // Enable/disable acq./calcs
+//   ecmcAsynDataItem*     asynRawData_;      // Raw data (input) array (double)
+//   ecmcAsynDataItem*     asynFFTAmp_;       // FFT amplitude array (double)
+//   ecmcAsynDataItem*     asynFFTMode_;      // FFT mode (cont/trigg)
+//   ecmcAsynDataItem*     asynFFTStat_;      // FFT status (no_stat/idle/acq/calc)
+//   ecmcAsynDataItem*     asynSource_;       // SOURCE
+//   ecmcAsynDataItem*     asynTrigg_;        // Trigg new measurement
+//   ecmcAsynDataItem*     asynFFTXAxis_;     // FFT X-axis frequencies
+
+  // New Asyn
+  int                   asynEnableId_;     // Enable/disable acq./calcs
+  int                   asynRawDataId_;    // Raw data (input) array (double)
+  int                   asynFFTAmpId_;     // FFT amplitude array (double)
+  int                   asynFFTModeId_;    // FFT mode (cont/trigg)
+  int                   asynFFTStatId_;    // FFT status (no_stat/idle/acq/calc)
+  int                   asynSourceId_;     // SOURCE
+  int                   asynTriggId_;      // Trigg new measurement
+  int                   asynFFTXAxisId_;   // FFT X-axis frequencies
 
   // Thread related
   epicsEvent            doCalcEvent_;

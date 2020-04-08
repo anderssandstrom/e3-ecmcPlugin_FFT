@@ -16,19 +16,29 @@
 
 #include <vector>
 #include <stdexcept>
+#include <string>
 #include "ecmcFFTWrap.h"
 #include "ecmcFFT.h"
 #include "ecmcFFTDefs.h"
 
+#define ECMC_PLUGIN_MAX_PORTNAME_CHARS 64
+#define ECMC_PLUGIN_PORTNAME_PREFIX "PLUGIN.FFT"
+
 static std::vector<ecmcFFT*>  ffts;
 static int                    fftObjCounter = 0;
+static char                   portNameBuffer[ECMC_PLUGIN_MAX_PORTNAME_CHARS];
 
 int createFFT(char* configStr) {
 
   // create new ecmcFFT object
   ecmcFFT* fft = NULL;
+
+  // create asynport name for new object ()
+  memset(portNameBuffer, 0, ECMC_PLUGIN_MAX_PORTNAME_CHARS);
+  snprintf (portNameBuffer, ECMC_PLUGIN_MAX_PORTNAME_CHARS,
+            ECMC_PLUGIN_PORTNAME_PREFIX "%d", fftObjCounter);
   try {
-    fft = new ecmcFFT(fftObjCounter, configStr);
+    fft = new ecmcFFT(fftObjCounter, configStr,portNameBuffer);
   }
   catch(std::exception& e) {
     if(fft) {
