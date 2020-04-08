@@ -274,8 +274,8 @@ void ecmcFFT::connectToDataSource() {
   double deltaFreq = ecmcSampleRateHz_* ((double)dataItemInfo_->dataSize / 
                      (double)dataItemInfo_->dataElementSize) / ((double)(cfgNfft_));
   for(unsigned int i = 0; i < cfgNfft_; ++i) {
-    freq = freq + deltaFreq;
     fftBufferXAxis_[i] = freq;
+    freq = freq + deltaFreq;
   }
 
   updateStatus(IDLE);
@@ -328,7 +328,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
       // Update asyn with both input and result
       asynRawData_->refreshParamRT(1); // Forced update (do not consider record rate)
       asynFFTAmp_->refreshParamRT(1);  // Forced update (do not consider record rate)
-      asynFFTXAxis_->refreshParamRT(1);  // Forced update (do not consider record rate)
+      //asynFFTXAxis_->refreshParamRT(1);  // Forced update (do not consider record rate)
 
       if(cfgDbgMode_){
         printComplexArray(fftBufferResult_,
