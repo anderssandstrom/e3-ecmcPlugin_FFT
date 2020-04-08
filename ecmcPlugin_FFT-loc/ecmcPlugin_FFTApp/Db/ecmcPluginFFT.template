@@ -87,3 +87,25 @@ record(longout,"$(P)Plugin-FFT${INDEX}-Mode-RB"){
   field(OUT,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.mode")
   field(SCAN, "Passive")
 }
+
+# Status
+record(longin,"$(P)Plugin-FFT${INDEX}-NFFT"){
+  field(DESC, "NFFT")
+  field(PINI, "1")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.nfft")
+  field(SCAN, "I/O Intr")
+  field(TSE,  "0")
+}
+
+# Samplerate
+record(ai,"$(P)Plugin-FFT${INDEX}-SampleRate-Act"){
+  field(DESC, "NFFT")
+  field(PINI, "1")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.samplerate")
+  field(SCAN, "I/O Intr")
+  field(TSE,  "0")
+}
+
+
