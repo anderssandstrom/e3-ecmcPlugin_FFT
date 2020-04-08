@@ -51,8 +51,9 @@ class ecmcFFT : public asynPortDriver {
   virtual asynStatus    readInt32(asynUser *pasynUser, epicsInt32 *value);
   virtual asynStatus    readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,
                                          size_t nElements, size_t *nIn);
-  virtual asynStatus readInt8Array(asynUser *pasynUser, epicsInt8 *value, 
-                                   size_t nElements, size_t *nIn);
+  virtual asynStatus    readInt8Array(asynUser *pasynUser, epicsInt8 *value, 
+                                      size_t nElements, size_t *nIn);
+  virtual asynStatus    readFloat64(asynUser *pasynUser, epicsFloat64 *value);
 
 
  private:
@@ -78,6 +79,7 @@ class ecmcFFT : public asynPortDriver {
   double*               fftBufferXAxis_;     // FFT x axis with freqs
   size_t                elementsInBuffer_;
   double                ecmcSampleRateHz_;
+  int                   dataSourceLinked_;   // To avoid link several times
   // ecmc callback handle for use when deregister at unload
   int                   callbackHandle_;
   int                   fftWaitingForCalc_;
@@ -108,6 +110,8 @@ class ecmcFFT : public asynPortDriver {
   int                   asynSourceId_;       // SOURCE
   int                   asynTriggId_;        // Trigg new measurement
   int                   asynFFTXAxisId_;     // FFT X-axis frequencies
+  int                   asynNfftId_;         // NFFT
+  int                   asynSRateId_;        // Sample rate
 
   // Thread related
   epicsEvent            doCalcEvent_;

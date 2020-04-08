@@ -23,6 +23,9 @@
 #define ECMC_PLUGIN_ASYN_FFT_SOURCE  "source"
 #define ECMC_PLUGIN_ASYN_FFT_TRIGG   "trigg"
 #define ECMC_PLUGIN_ASYN_FFT_X_FREQS "fftxaxis"
+#define ECMC_PLUGIN_ASYN_NFFT        "nfft"
+#define ECMC_PLUGIN_ASYN_RATE        "samplerate"
+
 
 #include <sstream>
 #include "ecmcFFT.h"
@@ -100,6 +103,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   triggOnce_        = 0;
   cycleCounter_     = 0;
   ignoreCycles_     = 0;
+  dataSourceLinked_ = 0;
 
   // Asyn
   asynEnableId_     = -1;    // Enable/disable acq./calcs
@@ -110,6 +114,8 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   asynSourceId_     = -1;    // SOURCE
   asynTriggId_      = -1;    // Trigg new measurement
   asynFFTXAxisId_   = -1;    // FFT X-axis frequencies
+  asynNfftId_       = -1;    // Nfft
+  asynSRateId_      = -1;    // Sample rate Hz
 
   ecmcSampleRateHz_ = getEcmcSampleRate();
   cfgFFTSampleRateHz_ = ecmcSampleRateHz_;
@@ -267,6 +273,12 @@ void ecmcFFT::parseConfigStr(char *configStr) {
 }
 
 void ecmcFFT::connectToDataSource() {
+  /* Check if already linked (one call to enterRT per loaded FFT lib (FFT object))
+      But link should only happen once!!*/
+  if( dataSourceLinked_ ) {
+    return;
+  }
+
   // Get dataItem
   dataItem_        = (ecmcDataItem*) getEcmcDataItem(cfgDataSourceStr_);
   if(!dataItem_) {
@@ -285,7 +297,7 @@ void ecmcFFT::connectToDataSource() {
   if( !dataTypeSupported(dataItem_->getEcmcDataType()) ) {
     throw std::invalid_argument( "Data type not supported." );
   }
-
+  dataSourceLinked_ = 1;
   updateStatus(IDLE);
 }
 
@@ -716,7 +728,7 @@ void ecmcFFT::initAsyn() {
   }
   setIntegerParam(asynTriggId_, (epicsInt32)triggOnce_);
 
-  // Add fft mode "plugin.fft%d.xaxisfreqs"
+  // Add fft mode "plugin.fft%d.fftxaxis"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_X_FREQS;
 
@@ -724,6 +736,24 @@ void ecmcFFT::initAsyn() {
     throw std::runtime_error("Failed create asyn parameter xaxisfreqs");
   }
   doCallbacksFloat64Array(fftBufferXAxis_,cfgNfft_ / 2 + 1, asynFFTXAxisId_,0);
+
+  // Add fft mode "plugin.fft%d.nfft"
+  paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
+             "." + ECMC_PLUGIN_ASYN_NFFT;
+
+  if( createParam(0, paramName.c_str(), asynParamInt32, &asynNfftId_ ) != asynSuccess ) {
+    throw std::runtime_error("Failed create asyn parameter trigg");
+  }
+  setIntegerParam(asynNfftId_, (epicsInt32)cfgNfft_);
+
+  // Add fft mode "plugin.fft%d.rate"
+  paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
+             "." + ECMC_PLUGIN_ASYN_RATE;
+
+  if( createParam(0, paramName.c_str(), asynParamInt32, &asynSRateId_ ) != asynSuccess ) {
+    throw std::runtime_error("Failed create asyn parameter trigg");
+  }
+  setDoubleParam(asynSRateId_, cfgFFTSampleRateHz_);
 
   // Update integers
   callParamCallbacks();
@@ -738,11 +768,13 @@ std::string ecmcFFT::to_string(int value) {
 
 void ecmcFFT::setEnable(int enable) {
   cfgEnable_ = enable;
+  setIntegerParam(asynEnableId_, enable);
 }
   
 void ecmcFFT::triggFFT() {
   clearBuffers();
   triggOnce_ = 1;
+  setIntegerParam(asynTriggId_,0);
 }
 
 void ecmcFFT::setModeFFT(FFT_MODE mode) {
@@ -760,7 +792,7 @@ void ecmcFFT::updateStatus(FFT_STATUS status) {
   callParamCallbacks();
 }
 
-// Called from worker thread. Makes the hard work
+// Called from low prio worker thread. Makes the hard work
 void ecmcFFT::doCalcWorker() {
 
   while(true) {
@@ -775,7 +807,6 @@ void ecmcFFT::doCalcWorker() {
     calcFFTAmp();      // Calculate amplitude from complex
     calcFFTXAxis();    // Calculate x axis
 
-    setIntegerParam(asynTriggId_,triggOnce_);
     doCallbacksFloat64Array(rawDataBuffer_,     cfgNfft_,     asynRawDataId_, 0);
     doCallbacksFloat64Array(fftBufferResultAmp_,cfgNfft_/2+1, asynFFTAmpId_,  0);
     doCallbacksFloat64Array(fftBufferXAxis_,    cfgNfft_/2+1, asynFFTXAxisId_,0);
@@ -789,8 +820,10 @@ void ecmcFFT::doCalcWorker() {
                        ECMC_EC_F64,
                        objectId_);    
     }
-    triggOnce_ = 0;    // Wait for next trigger if in trigg mode
+    
     clearBuffers();
+    triggOnce_ = 0;    // Wait for next trigger if in trigg mode
+    setIntegerParam(asynTriggId_,triggOnce_);
     fftWaitingForCalc_ = 0;
   } 
 }
@@ -823,6 +856,9 @@ asynStatus ecmcFFT::readInt32(asynUser *pasynUser, epicsInt32 *value) {
     return asynSuccess;
   }else if( function == asynFFTStatId_ ){
     *value = (epicsInt32)status_;
+    return asynSuccess;
+  }else if( function == asynNfftId_ ){
+    *value = (epicsInt32)cfgNfft_;
     return asynSuccess;
   }
 
@@ -861,6 +897,7 @@ asynStatus ecmcFFT::readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,
   *nIn = 0;
   return asynError;
 }
+
 asynStatus ecmcFFT::readInt8Array(asynUser *pasynUser, epicsInt8 *value, 
                                    size_t nElements, size_t *nIn) {
   int function = pasynUser->reason;
@@ -875,5 +912,15 @@ asynStatus ecmcFFT::readInt8Array(asynUser *pasynUser, epicsInt8 *value,
   }
 
   *nIn = 0;
+  return asynError;
+}
+
+asynStatus  ecmcFFT::readFloat64(asynUser *pasynUser, epicsFloat64 *value) {
+  int function = pasynUser->reason;
+  if( function == asynSRateId_ ) {
+    *value = cfgFFTSampleRateHz_;
+    return asynSuccess;
+  }
+
   return asynError;
 }

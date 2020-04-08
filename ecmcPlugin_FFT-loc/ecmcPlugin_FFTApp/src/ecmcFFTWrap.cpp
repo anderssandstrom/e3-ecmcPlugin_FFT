@@ -38,7 +38,7 @@ int createFFT(char* configStr) {
   snprintf (portNameBuffer, ECMC_PLUGIN_MAX_PORTNAME_CHARS,
             ECMC_PLUGIN_PORTNAME_PREFIX "%d", fftObjCounter);
   try {
-    fft = new ecmcFFT(fftObjCounter, configStr,portNameBuffer);
+    fft = new ecmcFFT(fftObjCounter, configStr, portNameBuffer);
   }
   catch(std::exception& e) {
     if(fft) {
