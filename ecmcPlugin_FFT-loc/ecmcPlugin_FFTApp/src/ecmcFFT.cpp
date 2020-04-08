@@ -135,8 +135,8 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   rawDataBuffer_      = new double[cfgNfft_];               // Raw input data (real)
   fftBufferInput_     = new std::complex<double>[cfgNfft_]; // FFT input  (complex)
   fftBufferResult_    = new std::complex<double>[cfgNfft_]; // FFT result (complex)
-  fftBufferResultAmp_ = new double[cfgNfft_];               // FFT result amplitude (real)
-  fftBufferXAxis_     = new double[cfgNfft_];               // FFT x axis with freqs
+  fftBufferResultAmp_ = new double[cfgNfft_ / 2 + 1];       // FFT result amplitude (real)
+  fftBufferXAxis_     = new double[cfgNfft_ / 2 + 1];       // FFT x axis with freqs
   clearBuffers();
 
   // Allocate KissFFT
@@ -273,7 +273,7 @@ void ecmcFFT::connectToDataSource() {
   double freq = 0;
   double deltaFreq = ecmcSampleRateHz_* ((double)dataItemInfo_->dataSize / 
                      (double)dataItemInfo_->dataElementSize) / ((double)(cfgNfft_));
-  for(unsigned int i = 0; i < cfgNfft_; ++i) {
+  for(unsigned int i = 0; i < (cfgNfft_ / 2 + 1); ++i) {
     fftBufferXAxis_[i] = freq;
     freq = freq + deltaFreq;
   }
@@ -404,8 +404,8 @@ void ecmcFFT::addDataToBuffer(double data) {
 
 void ecmcFFT::clearBuffers() {
   memset(rawDataBuffer_,   0, cfgNfft_ * sizeof(double));
-  memset(fftBufferResultAmp_, 0, cfgNfft_ * sizeof(double));
-  memset(fftBufferXAxis_, 0, cfgNfft_ * sizeof(double));  
+  memset(fftBufferResultAmp_, 0, (cfgNfft_ / 2 + 1) * sizeof(double));
+  // memset(fftBufferXAxis_, 0, (cfgNfft_ / 2 + 1) * sizeof(double));  
   for(unsigned int i = 0; i < cfgNfft_; ++i) {
     fftBufferResult_[i].real(0);
     fftBufferResult_[i].imag(0);
@@ -432,7 +432,7 @@ void ecmcFFT::scaleFFT() {
 }
 
 void ecmcFFT::calcFFTAmp() {  
-  for(unsigned int i = 0 ; i < cfgNfft_ ; ++i ) {
+  for(unsigned int i = 0 ; i < cfgNfft_ / 2 + 1 ; ++i ) {
     fftBufferResultAmp_[i] = std::abs(fftBufferResult_[i]);
   }
 }
@@ -700,12 +700,12 @@ void ecmcFFT::initAsyn() {
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_AMP;
   
-  asynFFTAmp_ = asynPort_->addNewAvailParam(paramName.c_str(),        // name
-                                            asynParamFloat64Array,    // asyn type 
+  asynFFTAmp_ = asynPort_->addNewAvailParam(paramName.c_str(),              // name
+                                            asynParamFloat64Array,          // asyn type 
                                             (uint8_t *)fftBufferResultAmp_, // pointer to data
-                                            cfgNfft_*sizeof(double),  // size of data
-                                            ECMC_EC_F64,              // ecmc data type
-                                            0);                       // die if fail
+                                            (cfgNfft_ / 2 + 1)*sizeof(double), // size of data
+                                            ECMC_EC_F64,                    // ecmc data type
+                                            0);                            // die if fail
 
   if(!asynFFTAmp_) {
     throw std::runtime_error("Failed to create asyn parameter \"" + paramName +"\".\n");
@@ -793,7 +793,7 @@ void ecmcFFT::initAsyn() {
   asynFFTXAxis_ = asynPort_->addNewAvailParam(paramName.c_str(),           // name
                                               asynParamFloat64Array,       // asyn type 
                                               (uint8_t *)fftBufferXAxis_,  // pointer to data
-                                              cfgNfft_*sizeof(double),     // size of data
+                                              (cfgNfft_ / 2 + 1) * sizeof(double), // size of data
                                               ECMC_EC_F64,                 // ecmc data type
                                               0);                          // die if fail
 
