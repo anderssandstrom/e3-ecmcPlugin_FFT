@@ -42,14 +42,14 @@ Note: If another plugin is loaded in between this will have no affect on these F
 ## Configuration
 
 The different available configuration settings:
-* SOURCE=<source>    : Sets source variable for FFT (example: ec0.s1.AI_1). This config is mandatory.
-* DBG_PRINT=<1/0>    : Enables/disables printouts from plugin, default = disabled.
-* NFFT=<nfft>        : Data points to collect, default = 4096.
-* APPLY_SCALE=<1/0>  : Apply scale, default = enabled.
-* DC_REMOVE=<1/0>    : Remove DC offset of input data (SOURCE), default = disabled.
-* ENABLE=<1/0>       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
-* MODE=<CONT/TRIGG>  : Continious or triggered mode, defaults to TRIGG
-* RATE=<rate in hz>  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate.
+* SOURCE= source variable    : Sets source variable for FFT (example: ec0.s1.AI_1). This config is mandatory.
+* DBG_PRINT=1/0    : Enables/disables printouts from plugin, default = disabled.
+* NFFT= nfft        : Data points to collect, default = 4096.
+* APPLY_SCALE=1/0  : Apply scale, default = enabled.
+* DC_REMOVE=1/0    : Remove DC offset of input data (SOURCE), default = disabled.
+* ENABLE=1/0       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
+* MODE=CONT/TRIGG  : Continious or triggered mode, defaults to TRIGG
+* RATE=rate in hz  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate.
 
 Example configuration string:
 ```
@@ -137,11 +137,12 @@ Exmaple: Mode triggered
 ### RATE
 Sets the sample rate of the raw input data (from data source). The default value is the ecmc rate for that data source.
 Note: only a lower and "integer" division of sample rate can be defined.
+
 Exmaple: Rate = 100Hz
 ```
 RATE=100;MODE=TRIGG;ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
-
+bMeasurese
 ## EPICS records
 Each FFT plugin object will create a new asynportdriver-port named "PLUGIN.FFT<index>" (index is explaine above).
 The reason for a dedicated asynport is to influence ecmc as little as possible.
@@ -156,7 +157,7 @@ The plugin contains a template file that will make most information availbe from
 * Trigger cmd                      (rw)
 * NFFT                             (ro)
 
-The available records from this template file can bMeasurese listed by the cmd: 
+The available records from this template file can be listed by the cmd: 
 ```
 dbgrep *FFT*
 ```
