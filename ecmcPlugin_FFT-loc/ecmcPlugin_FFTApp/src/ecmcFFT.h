@@ -74,7 +74,8 @@ class ecmcFFT {
   double                ecmcSampleRateHz_;
   // ecmc callback handle for use when deregister at unload
   int                   callbackHandle_;
-  int                   fftCalcDone_;
+  int                   fftWaitingForCalc_;
+  int                   destructs_;
   int                   objectId_;         // Unique object id
   int                   triggOnce_;
   int                   cycleCounter_;
@@ -101,6 +102,10 @@ class ecmcFFT {
   ecmcAsynDataItem*     asynSource_;       // SOURCE
   ecmcAsynDataItem*     asynTrigg_;        // Trigg new measurement
   ecmcAsynDataItem*     asynFFTXAxis_;     // FFT X-axis frequencies
+
+  // Thread related
+  epicsEvent            doCalcEvent_;
+
 
   // Some generic utility functions
   static uint8_t        getUint8(uint8_t* data);

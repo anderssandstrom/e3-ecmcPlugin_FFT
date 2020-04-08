@@ -82,10 +82,11 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   asynFFTStat_      = NULL;  // Status
   asynSource_       = NULL;  // Source
   asynTrigg_        = NULL;  // Trigg new measurement
-  asynFFTXAxis_       = NULL;  // Result x axis
+  asynFFTXAxis_     = NULL;  // Result x axis
   status_           = NO_STAT;
   elementsInBuffer_ = 0;
-  fftCalcDone_      = 0;
+  fftWaitingForCalc_= 0;
+  destructs_        = 0;
   callbackHandle_   = -1;
   objectId_         = fftIndex;
   scale_            = 1.0;
@@ -152,6 +153,10 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
 }
 
 ecmcFFT::~ecmcFFT() {
+  // kill worker
+  destructs_ = 1;  // maybe need todo in other way..
+  doCalcEvent_.signal();
+
   if(rawDataBuffer_) {
     delete[] rawDataBuffer_;
   }
@@ -167,7 +172,7 @@ ecmcFFT::~ecmcFFT() {
   }
   if (fftBufferInput_){
     delete[] fftBufferInput_;
-  }
+  }  
 }
 
 void ecmcFFT::parseConfigStr(char *configStr) {
@@ -285,6 +290,9 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
                                   size_t         size,
                                   ecmcEcDataType dt) {
   
+  if(fftWaitingForCalc_) {
+    return;
+  }
   // No buffer or full or not enabled
   if(!rawDataBuffer_ || !cfgEnable_) {
     return;
@@ -295,6 +303,7 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
     cycleCounter_++;
     return; // ignore this callback
   }
+
   cycleCounter_ = 0;
 
   if (cfgMode_ == TRIGG && !triggOnce_ ) {
@@ -312,38 +321,35 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   
   if(elementsInBuffer_ >= cfgNfft_) {
     //Buffer full
-    if(!fftCalcDone_){
+    if(!fftWaitingForCalc_){            
       // Perform calcs
       updateStatus(CALC);
+      fftWaitingForCalc_ = 1;
+      doCalcEvent_.signal(); // let worker start
 
-      // **** Breakout to sperate low prio work thread below
-      removeDCOffset();  // Remove dc on rawdata
-      calcFFT();      // FFT cacluation
-      scaleFFT();     // Scale FFT
-      calcFFTAmp();   // Calculate amplitude from complex 
-      // **** Breakout to thread above
+      // // **** Breakout to sperate low prio work thread below
+      // removeDCOffset();  // Remove dc on rawdata
+      // calcFFT();      // FFT cacluation
+      // scaleFFT();     // Scale FFT
+      // calcFFTAmp();   // Calculate amplitude from complex 
+      // // **** Breakout to thread above
 
-      triggOnce_ = 0; // Wait for nex trigger if in trigg mode
+      // triggOnce_ = 0; // Wait for nex trigger if in trigg mode
   
-      // Update asyn with both input and result
-      asynRawData_->refreshParamRT(1); // Forced update (do not consider record rate)
-      asynFFTAmp_->refreshParamRT(1);  // Forced update (do not consider record rate)
-      //asynFFTXAxis_->refreshParamRT(1);  // Forced update (do not consider record rate)
+      // // Update asyn with both input and result
+      // asynRawData_->refreshParamRT(1); // Forced update (do not consider record rate)
+      // asynFFTAmp_->refreshParamRT(1);  // Forced update (do not consider record rate)
+      // //asynFFTXAxis_->refreshParamRT(1);  // Forced update (do not consider record rate)
 
-      if(cfgDbgMode_){
-        printComplexArray(fftBufferResult_,
-                          cfgNfft_,
-                          objectId_);
-        printEcDataArray((uint8_t*)rawDataBuffer_,
-                         cfgNfft_*sizeof(double),
-                         ECMC_EC_F64,
-                         objectId_);
-      }
-
-      // If mode continious then start over
-      if(cfgMode_ == CONT) { 
-        clearBuffers();
-      }
+      // if(cfgDbgMode_){
+      //   printComplexArray(fftBufferResult_,
+      //                     cfgNfft_,
+      //                     objectId_);
+      //   printEcDataArray((uint8_t*)rawDataBuffer_,
+      //                    cfgNfft_*sizeof(double),
+      //                    ECMC_EC_F64,
+      //                    objectId_);
+      //}
     }
     return;
   }
@@ -413,12 +419,10 @@ void ecmcFFT::clearBuffers() {
     fftBufferInput_[i].imag(0);
   }
   elementsInBuffer_ = 0;
-  fftCalcDone_      = 0;
 }
 
 void ecmcFFT::calcFFT() {
   fftDouble_->transform(fftBufferInput_, fftBufferResult_);
-  fftCalcDone_ = 1;
 }
 
 void ecmcFFT::scaleFFT() {
@@ -842,9 +846,40 @@ void ecmcFFT::sampleData() {
                       dataItemInfo_->dataType);
 }
 
-// Called from worker thread
+// Called from worker thread. Makes the hard work
 void ecmcFFT::doCalcWorker() {
+
   while(true) {
-    epicsThreadSleep(1);
+    doCalcEvent_.wait();
+    printf("STARTING NEW CALC in worker for object %d###############################\n",objectId_);    
+    if(destructs_) {
+      break;
+    }
+
+    removeDCOffset();  // Remove dc on rawdata
+    calcFFT();         // FFT cacluation
+    scaleFFT();        // Scale FFT
+    calcFFTAmp();      // Calculate amplitude from complex
+
+    // NOTE these calls should not be here.. since they belong to other thread
+    // Update asyn with both input and result
+    triggOnce_ = 0;    // Wait for next trigger if in trigg mode
+    asynRawData_->refreshParamRT(1); // Forced update (do not consider record rate)
+    asynFFTAmp_->refreshParamRT(1);  // Forced update (do not consider record rate)
+    //asynFFTXAxis_->refreshParamRT(1);  // Forced update (do not consider record rate)
+    printf("END CALC in worker for object %d###############################\n",objectId_);    
+
+    if(cfgDbgMode_){
+      printComplexArray(fftBufferResult_,
+                        cfgNfft_,
+                        objectId_);
+      printEcDataArray((uint8_t*)rawDataBuffer_,
+                       cfgNfft_*sizeof(double),
+                       ECMC_EC_F64,
+                       objectId_);
+    
+    }
+    clearBuffers();
+    fftWaitingForCalc_ = 0;
   } 
 }
