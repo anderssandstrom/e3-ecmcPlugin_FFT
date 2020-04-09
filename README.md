@@ -25,19 +25,13 @@ A plugin is loaded by the ecmccfg command loadPlugin:
 https://github.com/anderssandstrom/ecmccfg/blob/master/scripts/loadPlugin.cmd
 
 Example:
-```
- epicsEnvSet(ECMC_PLUGIN_FILNAME,"/epics/base-7.0.3.1/require/3.1.2/siteMods/ecmcPlugin_FFT/master/lib/linux-arm/libecmcPlugin_FFT.so")
- epicsEnvSet(ECMC_PLUGIN_CONFIG,"DBG_PRINT=1;SOURCE=ax1.actpos;")
- ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=0,FILE=${ECMC_PLUGIN_FILNAME},CONFIG='${ECMC_PLUGIN_CONFIG}', REPORT=1
- epicsEnvUnset(ECMC_PLUGIN_FILNAME)
- epicsEnvUnset(ECMC_PLUGIN_CONFIG)
-
+``` 
+ ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=0,FILE=libecmcPlugin_FFT.so,CONFIG='DBG_PRINT=1;SOURCE=ax1.actpos;', REPORT=1
  dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=0, NELM=${FFT_NELM}")
-
 ```
 This plugin supports multiple loading. For each load of the plugin a new FFT object will be created. In order to access these plugins, from plc:s or EPICS records, they can be accessed by an index. The first FFT plugin will have index 0. The next loaded FFT plugin will have index 1...
 
-Note: If another plugin is loaded in between this will have no affect on these FFT indexes (so the FFT index is _not_ the same as plugin index).
+Note: If another plugin is loaded in between the loading of FFT plugins, it will have no affect on these FFT indexes (so the FFT index is _not_ the same as plugin index).
 
 ## Configuration
 
@@ -56,7 +50,7 @@ Example configuration string:
 "SOURCE=ax1.actpos;MODE=TRIGG;DBG_PRINT=1;ENABLE=1;"
 ```
 
-### SOURCE
+#### SOURCE (mandatory)
 The data source is defined by setting the SOURCE option in the plugin configuration string.
 This configuration is mandatory.
 
@@ -69,22 +63,24 @@ Example: Ethercat slave 1 analog input ch1
 ```
 "DBG_PRINT=1;SOURCE=ec0.s1.AI_1;"
 ```
-### DBG_PRINT
-Enable/disable printouts from plugin can be made bu setting the "DBG_PRINT" option. The default setting is disabled.
+#### DBG_PRINT (default disabled)
+Enable/disable printouts from plugin can be made bu setting the "DBG_PRINT" option.
 
 Exmaple: Disable
 ```
 "DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 
-### NFFT
-Defines number of samples for each measurement. Default setting is 4096.
+### NFFT (default 4096)
+Defines number of samples for each measurement.
+
+Note: Must be a n² number..
 
 Exmaple: 1024
 ```
 "NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
-### APPLY_SCALE
+### APPLY_SCALE (default disabled)
 Apply scaling in order to get correct amplitude of fft. Disabled as default (lower cpu usage).
 
 Exmaple: Enable
@@ -92,20 +88,29 @@ Exmaple: Enable
 "APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 
-### DC_REMOVE
-Remove DC of input signal. Default is disabled.
+### DC_REMOVE (default disabled)
+Remove DC of input signal by substracting average of input signal. This can be usefull if low frequencies are of intresst since the DC component normally distorts the spectrum near 0Hz.
 
 Exmaple: Enable
 ```
 "DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
-### ENABLE
+### ENABLE (default disabled)
 Enable data acq. and FFT calcs. The default settings is disabled so needs to be enabled from plc or over asyn in order to start calculations.
 
-Exmaple: Enable at startup
+Exmaple: Enable at startup by config
 ```
 "ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
+Exmaple: Enable FFT index 0 from EPICS:
+```
+caput IOC_TEST:Plugin-FFT0-Enable 1
+```
+Exmaple: Enable FFT index 0 from ecmc PLC code:
+```
+fft_enable(0,1)
+```
+
 ### MODE
 The FFT module can operate in two different modes:
 * CONTINIOUS (CONT)
@@ -134,6 +139,15 @@ Exmaple: Mode triggered
 ```
 "MODE=TRIGG;ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
+Exmaple:  Mode from EPICS record
+```
+# CONT
+caput IOC_TEST:Plugin-FFT0-Mode-RB 1
+# TRIGG
+caput IOC_TEST:Plugin-FFT0-Mode-RB 2
+```
+Note: The record is a output record with readback so can both be read and written to.
+
 ### RATE
 Sets the sample rate of the raw input data (from data source). The default value is the ecmc rate for that data source.
 Note: only a lower and "integer" division of sample rate can be defined.
@@ -142,7 +156,6 @@ Exmaple: Rate = 100Hz
 ```
 RATE=100;MODE=TRIGG;ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
-bMeasurese
 ## EPICS records
 Each FFT plugin object will create a new asynportdriver-port named "PLUGIN.FFT<index>" (index is explaine above).
 The reason for a dedicated asynport is to disturb ecmc as little as possible.
