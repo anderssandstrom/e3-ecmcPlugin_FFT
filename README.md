@@ -196,7 +196,6 @@ IOC_TEST:Plugin-FFT0-stat
 IOC_TEST:Plugin-FFT0-NFFT
 IOC_TEST:Plugin-FFT1-stat
 IOC_TEST:Plugin-FFT1-NFFT
-
 ```
 Note: The FFT asynparameters will not be visible by the ecmcReport iocsh command since the FFT records belong to another port.
 
@@ -224,6 +223,14 @@ An example script can be found in the iocsh directory of this repo.
 This example load 2 FFT plugin objects:
 1. SOURCE="plcs.plc0.static.sineval" which is a plc variable updated as a sinus with default freq 5 Hz.
 2. SOURCE="ecmc.thread.latency.max". This is the execution latency of ecmc (in nanoseconds).
+
+Start one FFT calc over EPICS records:
+```
+# Enable
+caput IOC_TEST:Plugin-FFT0-Enable 1
+# Trigg a new calc
+caput IOC_TEST:Plugin-FFT1-Trigg 1
+```
 
 #### Example input signal
 Epics record: IOC_TEST:Plugin-FFT0-Raw-Data-Act
