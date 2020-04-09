@@ -3,16 +3,19 @@ e3-ecmcPlugin_FFT
 ESS Site-specific EPICS module : ecmcPlugin_FFT
 
 A shared library with FFT functionalities loadable into ecmc:
+
 https://github.com/epics-modules/ecmc (or local ess fork https://github.com/icshwi/ecmc).
+
 Configuration is made through ecmccfg:
+
 https://github.com/paulscherrerinstitute/ecmccfg (ot local ess fork https://github.com/icshwi/ecmccfg)
 
 # Introduction
 
 The main functionality of this plugin is to make FFT analysis of ecmc data. Most data in ecmc is accessible:
-1. EtherCAT data  (ec0.s1.AI_1)
-2. Motion data    (ax1.actpos)
-3. PLC data       (plcs.plc0.static.testvalue)
+1. EtherCAT data  ("ec0.s1.AI_1" or "ec0.s2.mm.CH1_ARRAY")
+2. Motion data    ("ax1.actpos")
+3. PLC data       ("plcs.plc0.static.testvalue")
 
 Precautions have been taken in order to disturb ecmc real time thread as little as possible:
 1. All CPU intensive calculations are handled in a low prio work thread (not ecmc thread).
@@ -22,7 +25,7 @@ See below for configuration options and the different modes supported by this ec
 
 ## Loading of FFT plugin in ecmc: 
 A plugin is loaded by the ecmccfg command loadPlugin:
-https://github.com/anderssandstrom/ecmccfg/blob/master/scripts/loadPlugin.cmd
+https://github.com/icshwi/ecmccfg/blob/master/scripts/loadPlugin.cmd
 
 Example:
 ``` 
