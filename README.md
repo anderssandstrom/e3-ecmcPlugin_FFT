@@ -74,7 +74,7 @@ Exmaple: Disable
 "DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 
-### NFFT (default 4096)
+#### NFFT (default 4096)
 Defines number of samples for each measurement.
 
 Note: Must be a n² number..
@@ -83,7 +83,7 @@ Exmaple: 1024
 ```
 "NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
-### APPLY_SCALE (default disabled)
+#### APPLY_SCALE (default disabled)
 Apply scaling in order to get correct amplitude of fft. Disabled as default (lower cpu usage).
 
 Exmaple: Enable
@@ -91,14 +91,14 @@ Exmaple: Enable
 "APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 
-### DC_REMOVE (default disabled)
+#### DC_REMOVE (default disabled)
 Remove DC of input signal by substracting average of input signal. This can be usefull if low frequencies are of intresst since the DC component normally distorts the spectrum near 0Hz.
 
 Exmaple: Enable
 ```
 "DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
-### ENABLE (default disabled)
+#### ENABLE (default disabled)
 Enable data acq. and FFT calcs. The default settings is disabled so needs to be enabled from plc or over asyn in order to start calculations.
 
 Exmaple: Enable at startup by config
@@ -114,7 +114,7 @@ Exmaple: Enable FFT index 0 from ecmc PLC code:
 fft_enable(0,1)
 ```
 
-### MODE
+#### MODE
 The FFT module can operate in two different modes:
 * CONTINIOUS (CONT)
 * TRIGGERED (TRIGG)
@@ -151,7 +151,7 @@ caput IOC_TEST:Plugin-FFT0-Mode-RB 2
 ```
 Note: The record is a output record with readback so can both be read and written to.
 
-### RATE
+#### RATE
 Sets the sample rate of the raw input data (from data source). The default value is the ecmc rate for that data source.
 Note: only a lower and "integer" division of sample rate can be defined.
 
