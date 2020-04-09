@@ -248,6 +248,12 @@ Epics records:
 | :---: |
 |**Figure 2** Resulting FFT amplitude. |
 
+#### ecmc PLC code for example:
+```
+static.time:=ec_get_time()/1E9;
+static.sineval:=sin(2*pi*${FREQ=5}*static.time);
+```
+
 ## Plugin info
 
 ```
