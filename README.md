@@ -145,8 +145,8 @@ RATE=100;MODE=TRIGG;ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOU
 bMeasurese
 ## EPICS records
 Each FFT plugin object will create a new asynportdriver-port named "PLUGIN.FFT<index>" (index is explaine above).
-The reason for a dedicated asynport is to influence ecmc as little as possible.
-The plugin contains a template file that will make most information availbe from records:
+The reason for a dedicated asynport is to disturb ecmc as little as possible.
+The plugin contains a template file, "ecmcPluginFFT.template", that will make most information availbe from records:
 * Rawdata array                    (ro)
 * FFT amplitude array (result)     (ro)
 * FFT x axis (frequencies)         (ro)
@@ -157,16 +157,37 @@ The plugin contains a template file that will make most information availbe from
 * Trigger cmd                      (rw)
 * NFFT                             (ro)
 
-The available records from this template file can be listed by the cmd: 
+The available records from this template file can be listed by the cmd (here two FFT plugins loaded): 
 ```
 dbgrep *FFT*
+IOC_TEST:Plugin-FFT0-SampleRate-Act
+IOC_TEST:Plugin-FFT1-SampleRate-Act
+IOC_TEST:Plugin-FFT0-Mode-RB
+IOC_TEST:Plugin-FFT1-Mode-RB
+IOC_TEST:Plugin-FFT0-Source
+IOC_TEST:Plugin-FFT0-Raw-Data-Act
+IOC_TEST:Plugin-FFT0-Spectrum-Amp-Act
+IOC_TEST:Plugin-FFT0-Spectrum-X-Axis-Act
+IOC_TEST:Plugin-FFT1-Source
+IOC_TEST:Plugin-FFT1-Raw-Data-Act
+IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act
+IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act
+IOC_TEST:Plugin-FFT0-Enable
+IOC_TEST:Plugin-FFT0-Trigg
+IOC_TEST:Plugin-FFT1-Enable
+IOC_TEST:Plugin-FFT1-Trigg
+IOC_TEST:Plugin-FFT0-stat
+IOC_TEST:Plugin-FFT0-NFFT
+IOC_TEST:Plugin-FFT1-stat
+IOC_TEST:Plugin-FFT1-NFFT
+
 ```
 Note: The FFT asynparameters will not be visible by the ecmcReport iocsh command since the FFT records belong to another port.
 
 ## PLC interface
 
 ### PLC Functions
-1. "fft_clear(arg0);"         double fft_clear(index) : Clear/reset fft[index].
+1. "fft_clear(arg0);"         double fft_clear(index) : Clear/resets all buffers fft[index].
 2. "fft_enable(arg0, arg1);"  double fft_enable(index, enable) : Set enable for fft[index].
 3. "fft_trigg(arg0);"         double fft_trigg(index) : Trigg new measurement for fft[index]. Will clear buffers.
 4. "fft_mode(arg0, arg1);"    double fft_mode(index, mode) : Set mode Cont(1)/Trigg(2) for fft[index].
@@ -174,6 +195,7 @@ Note: The FFT asynparameters will not be visible by the ecmcReport iocsh command
 
 ### PLC Constants:
 
+These constants are for use togheter with the above listed PLC functions:
 1. "fft_CONT"    = 1:  FFT Mode: Continious
 2. "fft_TRIGG"   = 2:  FFT Mode :Triggered
 3. "fft_NO_STAT" = 0:  FFT Status: Invalid state
@@ -186,6 +208,22 @@ An example script can be found in the iocsh directory of this repo.
 This example load 2 FFT plugin objects:
 1. SOURCE="plcs.plc0.static.sineval" which is a plc variable updated as a sinus with default freq 5 Hz.
 2. SOURCE="ecmc.thread.latency.max". This is the execution latency of ecmc (in nanoseconds).
+
+#### Example input signal
+Epics record: IOC_TEST:Plugin-FFT0-Raw-Data-Act
+
+|![ecmc dep](docs/ecmcPLC5HzRAW.png)|
+| :---: |
+|**Figure 1** Raw data. |
+
+#### Example FFT result
+Epics records:
+* X = IOC_TEST:Plugin-FFT0-Spectrum-X-Axis-Act
+* Y = IOC_TEST:Plugin-FFT0-Spectrum-Amp-Act
+
+|![ecmc dep](docs/ecmcPLC5HzFFT.png)|
+| :---: |
+|**Figure 2** Resulting FFT amplitude. |
 
 ## Plugin info
 
