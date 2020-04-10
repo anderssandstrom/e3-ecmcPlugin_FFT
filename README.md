@@ -10,7 +10,7 @@ Configuration is made through ecmccfg:
 
 https://github.com/paulscherrerinstitute/ecmccfg (ot local ess fork https://github.com/icshwi/ecmccfg)
 
-FFT:s are caclulated with kissfft lib:
+FFT:s are calculated with the kissfft lib:
 https://github.com/mborgerding/kissfft
 
 
