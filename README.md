@@ -10,6 +10,10 @@ Configuration is made through ecmccfg:
 
 https://github.com/paulscherrerinstitute/ecmccfg (ot local ess fork https://github.com/icshwi/ecmccfg)
 
+FFT:s are caclulated with kissfft lib:
+https://github.com/mborgerding/kissfft
+
+
 # Introduction
 
 The main functionality of this plugin is to make FFT analysis of ecmc data. Most data in ecmc is accessible:
