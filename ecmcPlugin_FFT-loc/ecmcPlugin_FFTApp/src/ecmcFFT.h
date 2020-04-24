@@ -96,6 +96,7 @@ class ecmcFFT : public asynPortDriver {
   int                   cfgDbgMode_;         // Config: allow dbg printouts
   int                   cfgApplyScale_;      // Config: apply scale 1/nfft
   int                   cfgDcRemove_;        // Config: remove dc (average) 
+  int                   cfgLinRemove_;       // Config: remove linear componet (by least square) 
   size_t                cfgNfft_;            // Config: Data set size
   int                   cfgEnable_;          // Config: Enable data acq./calc.
   FFT_MODE              cfgMode_;            // Config: Mode continous or triggered.

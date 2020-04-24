@@ -124,6 +124,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cfgDbgMode_       = 0;
   cfgNfft_          = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
   cfgDcRemove_      = 0;
+  cfgLinRemove_     = 0;
   cfgApplyScale_    = 1;   // Scale as default to get correct amplitude in fft
   cfgEnable_        = 0;   // start disabled (enable over asyn)
   cfgMode_          = TRIGG;
@@ -232,10 +233,16 @@ void ecmcFFT::parseConfigStr(char *configStr) {
         cfgApplyScale_ = atoi(pThisOption);
       }
 
-      // ECMC_PLUGIN_DC_REMOVE_OPTION_CMD (1/0)
-      else if (!strncmp(pThisOption, ECMC_PLUGIN_DC_REMOVE_OPTION_CMD, strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD))) {
-        pThisOption += strlen(ECMC_PLUGIN_DC_REMOVE_OPTION_CMD);
+      // ECMC_PLUGIN_RM_DC_OPTION_CMD (1/0)
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_RM_DC_OPTION_CMD, strlen(ECMC_PLUGIN_RM_DC_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_RM_DC_OPTION_CMD);
         cfgDcRemove_ = atoi(pThisOption);
+      }
+
+      // ECMC_PLUGIN_RM_LIN_OPTION_CMD (1/0)
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_RM_LIN_OPTION_CMD, strlen(ECMC_PLUGIN_RM_LIN_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_RM_LIN_OPTION_CMD);
+        cfgLinRemove_ = atoi(pThisOption);
       }
 
       // ECMC_PLUGIN_ENABLE_OPTION_CMD (1/0)

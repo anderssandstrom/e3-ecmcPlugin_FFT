@@ -12,7 +12,7 @@
 
 // Needed to get headers in ecmc right...
 #define ECMC_IS_PLUGIN
-#define ECMC_EXAMPLE_PLUGIN_VERSION 1
+#define ECMC_EXAMPLE_PLUGIN_VERSION 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,7 +119,8 @@ struct ecmcPluginData pluginDataDef = {
                 "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).\n"
                 "    "ECMC_PLUGIN_NFFT_OPTION_CMD"<nfft>        : Data points to collect, default = 4096.\n" 
                 "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0>  : Apply scale, default = disabled.\n" 
-                "    "ECMC_PLUGIN_DC_REMOVE_OPTION_CMD"<1/0>    : Remove DC offset of input data (SOURCE), default = disabled.\n" 
+                "    "ECMC_PLUGIN_RM_DC_OPTION_CMD"<1/0>        : Remove DC offset of input data (SOURCE), default = disabled.\n" 
+                "    "ECMC_PLUGIN_RM_LIN_OPTION_CMD"<1/0>       : Remove linear component in data (SOURCE) by least square, default = disabled.\n" 
                 "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0>       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.\n"
                 "    "ECMC_PLUGIN_MODE_OPTION_CMD"<CONT/TRIGG>  : Continious or triggered mode, defaults to TRIGG\n"
                 "    "ECMC_PLUGIN_RATE_OPTION_CMD"<rate in hz>  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate."
