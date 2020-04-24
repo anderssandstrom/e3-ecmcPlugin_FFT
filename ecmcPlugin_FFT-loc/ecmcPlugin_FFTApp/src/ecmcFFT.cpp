@@ -17,6 +17,7 @@
 #define ECMC_PLUGIN_ASYN_PREFIX      "plugin.fft"
 #define ECMC_PLUGIN_ASYN_ENABLE      "enable"
 #define ECMC_PLUGIN_ASYN_RAWDATA     "rawdata"
+#define ECMC_PLUGIN_ASYN_PPDATA      "preprocdata"
 #define ECMC_PLUGIN_ASYN_FFT_AMP     "fftamplitude"
 #define ECMC_PLUGIN_ASYN_FFT_MODE    "mode"
 #define ECMC_PLUGIN_ASYN_FFT_STAT    "status"
@@ -108,6 +109,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   // Asyn
   asynEnableId_     = -1;    // Enable/disable acq./calcs
   asynRawDataId_    = -1;    // Raw data (input) array (double)
+  asynPPDataId_     = -1;    // Pre-processed data array (double)
   asynFFTAmpId_     = -1;    // FFT amplitude array (double)
   asynFFTModeId_    = -1;    // FFT mode (cont/trigg)
   asynFFTStatId_    = -1;    // FFT status (no_stat/idle/acq/calc)
@@ -153,6 +155,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
 
   // Allocate buffers
   rawDataBuffer_      = new double[cfgNfft_];               // Raw input data (real)
+  prepProcDataBuffer_ = new double[cfgNfft_];               // Data for preprocessing
   fftBufferInput_     = new std::complex<double>[cfgNfft_]; // FFT input  (complex)
   fftBufferResult_    = new std::complex<double>[cfgNfft_]; // FFT result (complex)
   fftBufferResultAmp_ = new double[cfgNfft_ / 2 + 1];       // FFT result amplitude (real)
@@ -179,6 +182,11 @@ ecmcFFT::~ecmcFFT() {
   if(rawDataBuffer_) {
     delete[] rawDataBuffer_;
   }
+
+  if(prepProcDataBuffer_) {
+    delete[] prepProcDataBuffer_;
+  }
+  
   // De register callback when unload
   if(callbackHandle_ >= 0) {
     dataItem_->deregDataUpdatedCallback(callbackHandle_);
@@ -400,14 +408,14 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 void ecmcFFT::addDataToBuffer(double data) {
   if(rawDataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
     rawDataBuffer_[elementsInBuffer_] = data;
-    fftBufferInput_[elementsInBuffer_].real(data);
-    fftBufferInput_[elementsInBuffer_].imag(0);
+    prepProcDataBuffer_[elementsInBuffer_] = data;
   }
   elementsInBuffer_ ++;
 }
 
 void ecmcFFT::clearBuffers() {
   memset(rawDataBuffer_,   0, cfgNfft_ * sizeof(double));
+  memset(prepProcDataBuffer_, 0, cfgNfft_ * sizeof(double));
   memset(fftBufferResultAmp_, 0, (cfgNfft_ / 2 + 1) * sizeof(double));
   memset(fftBufferXAxis_, 0, (cfgNfft_ / 2 + 1) * sizeof(double));  
   for(unsigned int i = 0; i < cfgNfft_; ++i) {
@@ -420,6 +428,13 @@ void ecmcFFT::clearBuffers() {
 }
 
 void ecmcFFT::calcFFT() {
+  // move pre-processed data to fft input buffer
+  for(unsigned int i = 0; i < cfgNfft_; ++i) {
+    fftBufferInput_[i].real(prepProcDataBuffer_[i]);
+    fftBufferInput_[i].imag(0);
+  }
+
+  // Do fft
   fftDouble_->transform(fftBufferInput_, fftBufferResult_);
 }
 
@@ -456,17 +471,36 @@ void ecmcFFT::removeDCOffset() {
     return;
   }
 
-  // calc average of raw data
+  // calc average of preprocess buffer data
   double sum = 0;
   for(unsigned int i = 0; i < cfgNfft_; ++i ) {
-    sum += fftBufferInput_[i].real();
+    sum += prepProcDataBuffer_[i];
   }
   double avg = sum / ((double)cfgNfft_);
   for(unsigned int i = 0; i < cfgNfft_; ++i ) {    
-    fftBufferInput_[i].real(fftBufferInput_[i].real()-avg);
+    prepProcDataBuffer_[i] = (prepProcDataBuffer_[i]-avg);
   }
 }
 
+void ecmcFFT::removeLin() {
+  if(!cfgLinRemove_) {
+    return;
+  }
+
+  double k=0;
+  double m=0;
+  // calc least square (best fit of line)
+  if(leastSquare(cfgNfft_,prepProcDataBuffer_,&k,&m)) {
+    printf("%s/%s:%d: Error: " ECMC_PLUGIN_RM_LIN_OPTION_CMD " failed, divison by 0. Data will not be processed with the option/configuration.\n",
+           __FILE__, __FUNCTION__, __LINE__);
+    return;
+  }
+  
+  // remove linear component (now we have k and m (y=k*x+m))  
+  for(unsigned int x = 0; x < cfgNfft_; ++x ) {
+    prepProcDataBuffer_[x] = prepProcDataBuffer_[x] - (k*x + m);
+  }
+}
 
 void ecmcFFT::printEcDataArray(uint8_t*       data, 
                                size_t         size,
@@ -690,6 +724,17 @@ void ecmcFFT::initAsyn() {
   }
   doCallbacksFloat64Array(rawDataBuffer_, cfgNfft_, asynRawDataId_,0);
 
+  // Add rawdata "plugin.fft%d.preprocdata"
+  paramName =ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
+             "." + ECMC_PLUGIN_ASYN_PPDATA;
+
+  if( createParam(0, paramName.c_str(), asynParamFloat64Array, &asynPPDataId_ ) != asynSuccess ) {
+    throw std::runtime_error("Failed create asyn parameter preprocdata");
+  }
+  doCallbacksFloat64Array(prepProcDataBuffer_, cfgNfft_, asynRawDataId_,0);
+
+
+
   // Add fft amplitude "plugin.fft%d.fftamplitude"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_AMP;
@@ -807,14 +852,18 @@ void ecmcFFT::doCalcWorker() {
     if(destructs_) {
       break;
     }
-
+    // Pre-process    
     removeDCOffset();  // Remove dc on rawdata
+    removeLin();       // Remove fitted line
+    // Process
     calcFFT();         // FFT cacluation
+    // Post-process    
     scaleFFT();        // Scale FFT
     calcFFTAmp();      // Calculate amplitude from complex
     calcFFTXAxis();    // Calculate x axis
 
     doCallbacksFloat64Array(rawDataBuffer_,     cfgNfft_,     asynRawDataId_, 0);
+    doCallbacksFloat64Array(prepProcDataBuffer_, cfgNfft_,    asynPPDataId_,  0);
     doCallbacksFloat64Array(fftBufferResultAmp_,cfgNfft_/2+1, asynFFTAmpId_,  0);
     doCallbacksFloat64Array(fftBufferXAxis_,    cfgNfft_/2+1, asynFFTXAxisId_,0);
     callParamCallbacks();    
@@ -883,6 +932,14 @@ asynStatus ecmcFFT::readFloat64Array(asynUser *pasynUser, epicsFloat64 *value,
     memcpy (value, rawDataBuffer_, ncopy);
     *nIn = ncopy;
     return asynSuccess;
+  } else if( function == asynPPDataId_) {
+    unsigned int ncopy = cfgNfft_;
+    if(nElements < ncopy) {
+      ncopy = nElements;
+    } 
+    memcpy (value, prepProcDataBuffer_, ncopy);
+    *nIn = ncopy;
+    return asynSuccess;
   } else if( function == asynFFTXAxisId_ ) {
     unsigned int ncopy = cfgNfft_/ 2 + 1;
     if(nElements < ncopy) {
@@ -930,4 +987,34 @@ asynStatus  ecmcFFT::readFloat64(asynUser *pasynUser, epicsFloat64 *value) {
   }
 
   return asynError;
+}
+
+/* y = k*x+m */
+int ecmcFFT::leastSquare(int n, const double y[], double* k, double* m){
+  double   sumx  = 0.0;
+  double   sumx2 = 0.0;
+  double   sumxy = 0.0;
+  double   sumy  = 0.0;
+  double   sumy2 = 0.0;
+
+  for (int x = 0; x < n; ++x){ 
+    //simulate x by just index
+    sumx  += x;
+    sumx2 += x * x;
+    sumxy += x * y[x];
+    sumy  += y[x];
+    sumy2 += y[x] * y[x];
+  } 
+
+  double denom = (n * sumx2 - sumx * sumx);
+  if (denom == 0) {
+    // Cannot dive by 0.. something wrong..
+    *k = 0;
+    *m = 0;
+    return 1; // Error
+  }
+
+  *k = (n * sumxy  -  sumx * sumy) / denom;
+  *m = (sumy * sumx2  -  sumx * sumxy) / denom;
+  return 0; 
 }

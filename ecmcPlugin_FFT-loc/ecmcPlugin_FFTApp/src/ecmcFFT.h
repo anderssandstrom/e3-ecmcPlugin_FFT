@@ -64,6 +64,7 @@ class ecmcFFT : public asynPortDriver {
   void                  calcFFTAmp();
   void                  calcFFTXAxis();
   void                  removeDCOffset();
+  void                  removeLin();
   void                  initAsyn();
   void                  updateStatus(FFT_STATUS status);  // Also updates asynparam
   static int            dataTypeSupported(ecmcEcDataType dt);
@@ -73,6 +74,7 @@ class ecmcFFT : public asynPortDriver {
   ecmcAsynPortDriver   *asynPort_;
   kissfft<double>*      fftDouble_;
   double*               rawDataBuffer_;      // Input data (real)
+  double*               prepProcDataBuffer_; // Preprocessed data (real)
   std::complex<double>* fftBufferInput_;     // Result (complex)
   std::complex<double>* fftBufferResult_;    // Result (complex)
   double*               fftBufferResultAmp_; // Resulting amplitude (abs of fftBufferResult_)
@@ -105,6 +107,7 @@ class ecmcFFT : public asynPortDriver {
   // Asyn
   int                   asynEnableId_;       // Enable/disable acq./calcs
   int                   asynRawDataId_;      // Raw data (input) array (double)
+  int                   asynPPDataId_;       // Pre-processed data array (double)
   int                   asynFFTAmpId_;       // FFT amplitude array (double)
   int                   asynFFTModeId_;      // FFT mode (cont/trigg)
   int                   asynFFTStatId_;      // FFT status (no_stat/idle/acq/calc)
@@ -138,6 +141,10 @@ class ecmcFFT : public asynPortDriver {
                                           size_t elements,
                                           int objId);
   static std::string    to_string(int value);
+  static int            leastSquare(int n,
+                                    const double y[],
+                                    double* k,
+                                    double* m);  // y=kx+m
 };
 
 #endif  /* ECMC_FFT_H_ */
