@@ -48,6 +48,7 @@ The different available configuration settings:
 * NFFT= nfft       : Data points to collect, default = 4096.
 * APPLY_SCALE=1/0  : Apply scale, default = enabled.
 * RM_DC=1/0        : Remove DC offset of input data (SOURCE), default = disabled.
+* RM_LIN=1/0       : Remove linear component input data (SOURCE), default = disabled.
 * ENABLE=1/0       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
 * MODE=CONT/TRIGG  : Continious or triggered mode, defaults to TRIGG
 * RATE=rate in hz  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate.
