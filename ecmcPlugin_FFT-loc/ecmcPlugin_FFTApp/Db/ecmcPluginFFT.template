@@ -33,6 +33,19 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Raw-Data-Act"){
   field(TSE,  "0")
 }
 
+# Pre-processed data
+record(waveform,"$(P)Plugin-FFT${INDEX}-PreProc-Data-Act"){
+  info(asyn:FIFO, "1000")
+  field(DESC, "Pre-processed data")
+  field(PINI, "1")
+  field(DTYP, "asynFloat64ArrayIn")
+  field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.preprocdata")
+  field(FTVL, "DOUBLE")
+  field(NELM, "$(NELM)")
+  field(SCAN, "I/O Intr")
+  field(TSE,  "0")
+}
+
 # FFT amplitude result
 record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-Amp-Act"){
   info(asyn:FIFO, "1000")
