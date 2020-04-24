@@ -45,9 +45,9 @@ Note: If another plugin is loaded in between the loading of FFT plugins, it will
 The different available configuration settings:
 * SOURCE= source variable    : Sets source variable for FFT (example: ec0.s1.AI_1). This config is mandatory.
 * DBG_PRINT=1/0    : Enables/disables printouts from plugin, default = disabled.
-* NFFT= nfft        : Data points to collect, default = 4096.
+* NFFT= nfft       : Data points to collect, default = 4096.
 * APPLY_SCALE=1/0  : Apply scale, default = enabled.
-* DC_REMOVE=1/0    : Remove DC offset of input data (SOURCE), default = disabled.
+* RM_DC=1/0        : Remove DC offset of input data (SOURCE), default = disabled.
 * ENABLE=1/0       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
 * MODE=CONT/TRIGG  : Continious or triggered mode, defaults to TRIGG
 * RATE=rate in hz  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate.
@@ -94,20 +94,19 @@ Exmaple: Enable
 ```
 "APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
+### RM_DC
+Remove DC of input signal. Default is disabled.
 
-#### DC_REMOVE (default: disabled)
-Remove DC of input signal by substracting average of input signal. This can be usefull if low frequencies are of intresst since the DC component normally distorts the spectrum near 0Hz.
-
-Exmaple: Enable
+Exmaple: Remove DC offset
 ```
-"DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 #### ENABLE (default: disabled)
 Enable data acq. and FFT calcs. The default settings is disabled so needs to be enabled from plc or over asyn in order to start calculations.
 
 Exmaple: Enable at startup by config
 ```
-"ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 Exmaple: Enable FFT index 0 from EPICS:
 ```
@@ -144,7 +143,7 @@ Triggered mode:
 
 Exmaple: Mode triggered
 ```
-"MODE=TRIGG;ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 Exmaple:  Mode from EPICS record
 ```
@@ -161,7 +160,7 @@ Note: only a lower and "integer" division of sample rate can be defined.
 
 Exmaple: Rate = 100Hz
 ```
-RATE=100;MODE=TRIGG;ENABLE=1;DC_REMOVE=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+RATE=100;MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
 ```
 ## EPICS records
 Each FFT plugin object will create a new asynportdriver-port named "PLUGIN.FFT<index>" (index is explaine above).
@@ -270,7 +269,7 @@ Plugin info:
     SOURCE=<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).
     NFFT=<nfft>        : Data points to collect, default = 4096.
     APPLY_SCALE=<1/0>  : Apply scale, default = disabled.
-    DC_REMOVE=<1/0>    : Remove DC offset of input data (SOURCE), default = disabled.
+    RM_DC=<1/0>    : Remove DC offset of input data (SOURCE), default = disabled.
     ENABLE=<1/0>       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
     MODE=<CONT/TRIGG>  : Continious or triggered mode, defaults to TRIGG
     RATE=<rate in hz>  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate.
