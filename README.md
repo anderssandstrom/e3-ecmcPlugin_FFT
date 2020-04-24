@@ -33,7 +33,7 @@ https://github.com/icshwi/ecmccfg/blob/master/scripts/loadPlugin.cmd
 
 Example:
 ``` 
- ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=0,FILE=libecmcPlugin_FFT.so,CONFIG='DBG_PRINT=1;SOURCE=ax1.actpos;', REPORT=1
+ ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=0,FILE=libecmcPlugin_FFT.so,CONFIG='DBG_PRINT=1;SOURCE=ax1.actpos;RM_LIN=1;', REPORT=1
  dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=0, NELM=${FFT_NELM}")
 ```
 This plugin supports multiple loading. For each load of the plugin a new FFT object will be created. In order to access these plugins, from plc:s or EPICS records, they can be accessed by an index. The first FFT plugin will have index 0. The next loaded FFT plugin will have index 1...
@@ -54,16 +54,16 @@ The different available configuration settings:
 
 Example configuration string:
 ```
-"SOURCE=ax1.actpos;MODE=TRIGG;DBG_PRINT=1;ENABLE=1;"
+"SOURCE=ax1.poserr;MODE=TRIGG;DBG_PRINT=1;ENABLE=1;"
 ```
 
 #### SOURCE (mandatory)
 The data source is defined by setting the SOURCE option in the plugin configuration string.
 This configuration is mandatory.
 
-Example: Axis 1 actpos
+Example: Axis 1 actpos (See RM_LIN config below)
 ```
-"DBG_PRINT=1;SOURCE=ax1.actpos;"
+"DBG_PRINT=1;SOURCE=ax1.actpos;RM_LIN=1;"
 
 ```
 Example: Ethercat slave 1 analog input ch1
@@ -75,7 +75,7 @@ Enable/disable printouts from plugin can be made bu setting the "DBG_PRINT" opti
 
 Exmaple: Disable
 ```
-"DBG_PRINT=0;SOURCE=ax1.actpos;"
+"DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 
 #### NFFT (default: 4096)
@@ -85,28 +85,38 @@ Note: Must be a n² number..
 
 Exmaple: 1024
 ```
-"NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 #### APPLY_SCALE (default disabled)
 Apply scaling in order to get correct amplitude of fft. Disabled as default (lower cpu usage).
 
 Exmaple: Enable
 ```
-"APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 ### RM_DC
 Remove DC of input signal. Default is disabled.
 
 Exmaple: Remove DC offset
 ```
-"RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+
+```
+### RM_LIN
+Remove linear component of input signal. Default is disabled.
+The linear component is calculated by least square method.
+Could be usefull for values that increase, like actual position.
+
+Exmaple: Remove linear component
+```
+"RM_LIN=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 #### ENABLE (default: disabled)
 Enable data acq. and FFT calcs. The default settings is disabled so needs to be enabled from plc or over asyn in order to start calculations.
 
 Exmaple: Enable at startup by config
 ```
-"ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 Exmaple: Enable FFT index 0 from EPICS:
 ```
@@ -143,7 +153,7 @@ Triggered mode:
 
 Exmaple: Mode triggered
 ```
-"MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+"MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 Exmaple:  Mode from EPICS record
 ```
@@ -160,7 +170,7 @@ Note: only a lower and "integer" division of sample rate can be defined.
 
 Exmaple: Rate = 100Hz
 ```
-RATE=100;MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.actpos;"
+RATE=100;MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 ## EPICS records
 Each FFT plugin object will create a new asynportdriver-port named "PLUGIN.FFT<index>" (index is explaine above).
