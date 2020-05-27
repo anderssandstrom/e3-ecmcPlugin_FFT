@@ -158,7 +158,8 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg7 = NULL,
         .funcArg8 = NULL,
         .funcArg9 = NULL,
-        .funcArg10 = NULL,        
+        .funcArg10 = NULL,
+        .funcGenericObj = NULL,
       },
   .funcs[1] =
       { /*----fft_enable----*/
@@ -180,7 +181,8 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg7 = NULL,
         .funcArg8 = NULL,
         .funcArg9 = NULL,
-        .funcArg10 = NULL,        
+        .funcArg10 = NULL,
+        .funcGenericObj = NULL,
       },
     .funcs[2] =
       { /*----fft_trigg----*/
@@ -202,7 +204,8 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg7 = NULL,
         .funcArg8 = NULL,
         .funcArg9 = NULL,
-        .funcArg10 = NULL,        
+        .funcArg10 = NULL,
+        .funcGenericObj = NULL,
       },
     .funcs[3] =
       { /*----fft_mode----*/
@@ -224,7 +227,8 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg7 = NULL,
         .funcArg8 = NULL,
         .funcArg9 = NULL,
-        .funcArg10 = NULL,        
+        .funcArg10 = NULL,
+        .funcGenericObj = NULL,
       },
     .funcs[4] =
       { /*----fft_stat----*/
@@ -246,7 +250,8 @@ struct ecmcPluginData pluginDataDef = {
         .funcArg7 = NULL,
         .funcArg8 = NULL,
         .funcArg9 = NULL,
-        .funcArg10 = NULL,        
+        .funcArg10 = NULL,
+        .funcGenericObj = NULL,
       },
   .funcs[5] = {0},  // last element set all to zero..
   // PLC consts
