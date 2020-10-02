@@ -32,6 +32,7 @@
 #include "ecmcFFT.h"
 #include "ecmcPluginClient.h"
 #include "ecmcAsynPortDriver.h"
+#include "ecmcAsynPortDriverUtils.h"
 #include "epicsThread.h"
 
 
@@ -105,6 +106,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cycleCounter_     = 0;
   ignoreCycles_     = 0;
   dataSourceLinked_ = 0;
+  isEcEntry_        = 0;
 
   // Asyn
   asynEnableId_     = -1;    // Enable/disable acq./calcs
@@ -293,7 +295,7 @@ void ecmcFFT::connectToDataSource() {
   if( dataSourceLinked_ ) {
     return;
   }
-
+  isEcEntry_ = sourceIsEcEntry();
   // Get dataItem
   dataItem_        = (ecmcDataItem*) getEcmcDataItem(cfgDataSourceStr_);
   if(!dataItem_) {
@@ -363,6 +365,11 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
   updateStatus(ACQ);
 
   size_t dataElementSize = getEcDataTypeByteSize(dt);
+
+  // Special case for ec data 8byte but might only be a single 2 byte value.. 
+  if(isEcEntry_) {
+     size = dataElementSize;  // Only one loop below
+  }
 
   uint8_t *pData = data;
   for(unsigned int i = 0; i < size / dataElementSize; ++i) {    
@@ -457,8 +464,16 @@ void ecmcFFT::calcFFTAmp() {
 // Should be enough todo once
 void ecmcFFT::calcFFTXAxis() {
   //fill x axis buffer with freqs
+  
   double freq = 0;
-  double deltaFreq = ecmcSampleRateHz_* ((double)dataItemInfo_->dataSize / 
+  size_t size = dataItemInfo_->dataSize;
+  
+  // Specail case for ecdata.. always 8byte but might only accupy a 1 byte element
+  if(isEcEntry_) {
+     size = dataItemInfo_->dataElementSize; //Only one element per sample..
+  }
+  
+  double deltaFreq = ecmcSampleRateHz_* ((double)size / 
                      (double)dataItemInfo_->dataElementSize) / ((double)(cfgNfft_));
   for(unsigned int i = 0; i < (cfgNfft_ / 2 + 1); ++i) {
     fftBufferXAxis_[i] = freq;
@@ -1017,4 +1032,24 @@ int ecmcFFT::leastSquare(int n, const double y[], double* k, double* m){
   *k = (n * sumxy  -  sumx * sumy) / denom;
   *m = (sumy * sumx2  -  sumx * sumxy) / denom;
   return 0; 
+}
+
+/*Ec data is always 8byte but still is just 1 element need specail treatment!!!!!*/
+int ecmcFFT::sourceIsEcEntry() {
+  int master=-1;
+  int slave =-1;
+  int bit  = -1;
+  char buffer[ECMC_MAX_FIELD_CHAR_LENGTH];
+
+  int errorCode = parseEcPath(cfgDataSourceStr_,
+                              &master,
+                              &slave,
+                              &buffer[0],
+                              &bit);
+  
+  if(errorCode) {
+    return 0; //is _not_ ec entry
+  }
+  
+  return 1; //is  ec entry
 }

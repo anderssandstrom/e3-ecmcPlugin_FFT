@@ -68,6 +68,7 @@ class ecmcFFT : public asynPortDriver {
   void                  initAsyn();
   void                  updateStatus(FFT_STATUS status);  // Also updates asynparam
   static int            dataTypeSupported(ecmcEcDataType dt);
+  int                   sourceIsEcEntry();
 
   ecmcDataItem         *dataItem_;
   ecmcDataItemInfo     *dataItemInfo_;
@@ -103,6 +104,8 @@ class ecmcFFT : public asynPortDriver {
   int                   cfgEnable_;          // Config: Enable data acq./calc.
   FFT_MODE              cfgMode_;            // Config: Mode continous or triggered.
   double                cfgFFTSampleRateHz_; // Config: Sample rate (defaukts to ecmc rate)
+  
+  bool                  isEcEntry_;
 
   // Asyn
   int                   asynEnableId_;       // Enable/disable acq./calcs
