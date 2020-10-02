@@ -118,7 +118,7 @@ struct ecmcPluginData pluginDataDef = {
   .optionDesc = "\n    "ECMC_PLUGIN_DBG_PRINT_OPTION_CMD"<1/0>    : Enables/disables printouts from plugin, default = disabled.\n"
                 "    "ECMC_PLUGIN_SOURCE_OPTION_CMD"<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).\n"
                 "    "ECMC_PLUGIN_NFFT_OPTION_CMD"<nfft>        : Data points to collect, default = 4096.\n" 
-                "    "ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD"<1/0>  : Apply scale, default = disabled.\n" 
+                "    "ECMC_PLUGIN_SCALE_OPTION_CMD"scalefactor  : Apply scale to source data, default = 1.0.\n" 
                 "    "ECMC_PLUGIN_RM_DC_OPTION_CMD"<1/0>        : Remove DC offset of input data (SOURCE), default = disabled.\n" 
                 "    "ECMC_PLUGIN_RM_LIN_OPTION_CMD"<1/0>       : Remove linear component in data (SOURCE) by least square, default = disabled.\n" 
                 "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0>       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.\n"

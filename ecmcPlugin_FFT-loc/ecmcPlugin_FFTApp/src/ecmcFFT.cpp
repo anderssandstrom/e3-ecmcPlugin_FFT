@@ -129,9 +129,10 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cfgNfft_          = ECMC_PLUGIN_DEFAULT_NFFT; // samples in fft (must be n^2)
   cfgDcRemove_      = 0;
   cfgLinRemove_     = 0;
-  cfgApplyScale_    = 1;   // Scale as default to get correct amplitude in fft
+  //cfgApplyScale_    = 1;   // Scale as default to get correct amplitude in fft
   cfgEnable_        = 0;   // start disabled (enable over asyn)
   cfgMode_          = TRIGG;
+  cfgScale_         =  1.0;
 
   parseConfigStr(configStr); // Assigns all configs
   // Check valid nfft
@@ -237,11 +238,11 @@ void ecmcFFT::parseConfigStr(char *configStr) {
         cfgNfft_ = atoi(pThisOption);
       }
 
-      // ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD (1/0)
-      else if (!strncmp(pThisOption, ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD, strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD))) {
-        pThisOption += strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD);
-        cfgApplyScale_ = atoi(pThisOption);
-      }
+      // // ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD (1/0)
+      // else if (!strncmp(pThisOption, ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD, strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD))) {
+      //   pThisOption += strlen(ECMC_PLUGIN_APPLY_SCALE_OPTION_CMD);
+      //   cfgApplyScale_ = atoi(pThisOption);
+      // }
 
       // ECMC_PLUGIN_RM_DC_OPTION_CMD (1/0)
       else if (!strncmp(pThisOption, ECMC_PLUGIN_RM_DC_OPTION_CMD, strlen(ECMC_PLUGIN_RM_DC_OPTION_CMD))) {
@@ -276,6 +277,12 @@ void ecmcFFT::parseConfigStr(char *configStr) {
       else if (!strncmp(pThisOption, ECMC_PLUGIN_RATE_OPTION_CMD, strlen(ECMC_PLUGIN_RATE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_RATE_OPTION_CMD);
         cfgFFTSampleRateHz_ = atof(pThisOption);
+      }
+
+      // ECMC_PLUGIN_SCALE_OPTION_CMD rate in HZ
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_SCALE_OPTION_CMD, strlen(ECMC_PLUGIN_SCALE_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_SCALE_OPTION_CMD);
+        cfgScale_ = atof(pThisOption);
       }
 
       pThisOption = pNextOption;
@@ -414,8 +421,8 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 
 void ecmcFFT::addDataToBuffer(double data) {
   if(rawDataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
-    rawDataBuffer_[elementsInBuffer_] = data;
-    prepProcDataBuffer_[elementsInBuffer_] = data;
+    rawDataBuffer_[elementsInBuffer_] = data* cfgScale_;
+    prepProcDataBuffer_[elementsInBuffer_] = data *cfgScale_;
   }
   elementsInBuffer_ ++;
 }
@@ -446,9 +453,10 @@ void ecmcFFT::calcFFT() {
 }
 
 void ecmcFFT::scaleFFT() {
-  if(!cfgApplyScale_) {
-    return;
-  }
+  // Always scale
+  //if(!cfgApplyScale_) {
+  //  return;
+  //}
 
   for(unsigned int i = 0 ; i < cfgNfft_ ; ++i ) {
     fftBufferResult_[i] = fftBufferResult_[i] * scale_;

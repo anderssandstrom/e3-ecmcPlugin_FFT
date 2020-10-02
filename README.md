@@ -46,7 +46,7 @@ The different available configuration settings:
 * SOURCE= source variable    : Sets source variable for FFT (example: ec0.s1.AI_1). This config is mandatory.
 * DBG_PRINT=1/0    : Enables/disables printouts from plugin, default = disabled.
 * NFFT= nfft       : Data points to collect, default = 4096.
-* APPLY_SCALE=1/0  : Apply scale, default = enabled.
+* SCALE=scale      : Apply scale to input data, default = 1.0.
 * RM_DC=1/0        : Remove DC offset of input data (SOURCE), default = disabled.
 * RM_LIN=1/0       : Remove linear component input data (SOURCE), default = disabled.
 * ENABLE=1/0       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
@@ -88,19 +88,19 @@ Exmaple: 1024
 ```
 "NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
-#### APPLY_SCALE (default disabled)
-Apply scaling in order to get correct amplitude of fft. Disabled as default (lower cpu usage).
+#### SCALE (default 1.0)
+Apply custom scale to input data.
 
-Exmaple: Enable
+Exmaple: 5.0
 ```
-"APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+"SCALE=5.0;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 ### RM_DC
 Remove DC of input signal. Default is disabled.
 
 Exmaple: Remove DC offset
 ```
-"RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+"RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 
 ```
 ### RM_LIN
@@ -110,14 +110,14 @@ Could be usefull for values that increase, like actual position.
 
 Exmaple: Remove linear component
 ```
-"RM_LIN=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+"RM_LIN=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 #### ENABLE (default: disabled)
 Enable data acq. and FFT calcs. The default settings is disabled so needs to be enabled from plc or over asyn in order to start calculations.
 
 Exmaple: Enable at startup by config
 ```
-"ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+"ENABLE=1;RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 Exmaple: Enable FFT index 0 from EPICS:
 ```
@@ -154,7 +154,7 @@ Triggered mode:
 
 Exmaple: Mode triggered
 ```
-"MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+"MODE=TRIGG;ENABLE=1;RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 Exmaple:  Mode from EPICS record
 ```
@@ -171,7 +171,7 @@ Note: only a lower and "integer" division of sample rate can be defined.
 
 Exmaple: Rate = 100Hz
 ```
-RATE=100;MODE=TRIGG;ENABLE=1;RM_DC=1;APPLY_SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+RATE=100;MODE=TRIGG;ENABLE=1;RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 ## EPICS records
 Each FFT plugin object will create a new asynportdriver-port named "PLUGIN.FFT<index>" (index is explaine above).
@@ -279,7 +279,7 @@ Plugin info:
     DBG_PRINT=<1/0>    : Enables/disables printouts from plugin, default = disabled.
     SOURCE=<source>    : Sets source variable for FFT (example: ec0.s1.AI_1).
     NFFT=<nfft>        : Data points to collect, default = 4096.
-    APPLY_SCALE=<1/0>  : Apply scale, default = disabled.
+    SCALE=<1/0>  : Apply scale, default = disabled.
     RM_DC=<1/0>    : Remove DC offset of input data (SOURCE), default = disabled.
     ENABLE=<1/0>       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
     MODE=<CONT/TRIGG>  : Continious or triggered mode, defaults to TRIGG
