@@ -268,6 +268,34 @@ static.time:=ec_get_time()/1E9;
 static.sineval:=sin(2*pi*${FREQ=5}*static.time);
 ```
 
+## FFT GUI
+
+A simple tool, [ecmcFFTGui.py](tools/ecmcFFTGui.py),  to visualize the calculated spectrum can be found in the tools directory.
+
+Example: ecmcFFTGui.py help printout
+```
+python ecmcFFTGui.py
+ecmcFFTGui: Plots waveforms of FFT data (updates on Y data callback). 
+python ecmcFFTGui.py <x.pv> <y.pv>
+example: python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act
+```
+
+Example: Start ecmcFFTGui.py for two spectrum waveform pvs
+```
+python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act
+```
+Needed packages:
+
+* python 3.5
+
+* epics
+
+* PyQt5
+
+* numpy 
+
+* matplotlib
+
 ## Plugin info
 
 ```
