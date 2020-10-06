@@ -13,15 +13,12 @@
 #*************************************************************************
 
 import sys
-import os
 import epics
 from PyQt5.QtWidgets import *
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-import functools
 import numpy as np
-import random as rd
 import matplotlib
 matplotlib.use("Qt5Agg")
 from matplotlib.figure import Figure
@@ -30,10 +27,7 @@ from matplotlib.lines import Line2D
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt 
-
-import time
 import threading
-
 
 class comSignal(QObject):
     data_signal = pyqtSignal(object)
