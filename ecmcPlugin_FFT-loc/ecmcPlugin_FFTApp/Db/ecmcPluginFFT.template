@@ -57,12 +57,14 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-Amp-Act"){
   field(NELM, "$(NELM)")
   field(SCAN, "I/O Intr")
   field(TSE,  "0")
+  field(EGU,  "${AMP_EGU= }")
 }
 
 # FFT xaxis
 record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-X-Axis-Act"){
   info(asyn:FIFO, "1000")
-  field(DESC, "Raw data")
+  field(DESC, "X-Axis data")
+  field(EGU,  "Hz")
   field(PINI, "1")
   field(DTYP, "asynFloat64ArrayIn")
   field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.fftxaxis")

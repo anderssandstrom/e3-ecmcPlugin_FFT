@@ -14,3 +14,4 @@ core.*
 *PVs.list
 *-loc/*.Makefile
 ecmcPlugin_Simple-loc/*.Makefile
+*__*
