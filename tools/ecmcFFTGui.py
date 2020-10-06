@@ -156,8 +156,7 @@ def printOutHelp():
   print("example: python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act")
 
 if __name__ == "__main__":
-    import sys
-    print (sys.argv)
+    import sys    
     if len(sys.argv)!=3:
         printOutHelp()
         sys.exit()
