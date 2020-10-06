@@ -106,7 +106,7 @@ class ecmcFFTGui(QtWidgets.QDialog):
             self.pauseBtn.setStyleSheet("background-color: red");
         else:
             self.pauseBtn.setStyleSheet("background-color: green");
-
+            self.comSignalY.data_signal.emit(self.spectY)
         return
 
 
