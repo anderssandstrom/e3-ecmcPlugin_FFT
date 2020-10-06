@@ -40,10 +40,9 @@ class ecmcFFTGui(QtWidgets.QDialog):
         self.comSignalY = comSignal()        
         self.comSignalY.data_signal.connect(self.callbackFuncY)
         self.pause = 0
-        self.spectX = np.zeros(0)
-        self.spectY = np.zeros(0)        
-        self.figure = plt.figure()                    
-        self.xDataValid = 0        
+        self.spectX = None
+        self.spectY = None
+        self.figure = plt.figure()                            
         self.plotted_line = None
         self.ax = None
         self.canvas = FigureCanvas(self.figure)   
@@ -115,15 +114,13 @@ class ecmcFFTGui(QtWidgets.QDialog):
         return
 
     def plotSpect(self):
-        if self.pause:
-            #print('paused!')
+        if self.pause:            
             return
-        if not self.xDataValid:
-            #print('wait for x data!')
+        if self.spectX is None:
             return
-
-        #print('plotSpect!')        
-
+        if self.spectY is None:
+            return
+        
         # create an axis 
         if self.ax is None:
            self.ax = self.figure.add_subplot(111)
