@@ -50,7 +50,10 @@ class ecmcFFTGui(QtWidgets.QDialog):
         self.pause = 0
         self.spectX = np.zeros(0)
         self.spectY = np.zeros(0)        
-        self.figure = plt.figure()            
+        self.figure = plt.figure()                    
+        self.xDataValid = 0        
+        self.plotted_line = None
+        self.ax = None
         # this is the Canvas Widget that  
         # displays the 'figure'it takes the 
         # 'figure' instance as a parameter to __init__ 
@@ -69,12 +72,11 @@ class ecmcFFTGui(QtWidgets.QDialog):
         self.startval = 0
         self.pvNameY = "IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act"
         self.pvNameX = "IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act"
-        self.connectPvs() # Epics
-        self.setTitle()
+        self.connectPvs() # Epics        
 
         # Define the geometry of the main window
         self.setGeometry(300, 300, 900, 700)
-        self.setWindowTitle("ecmc plot")
+        self.setWindowTitle("ecmc FFT plot: " + self.pvNameY + ' vs ' + self.pvNameX)
 
         # creating a Vertical Box layout 
         layout = QVBoxLayout() 
@@ -104,9 +106,11 @@ class ecmcFFTGui(QtWidgets.QDialog):
         if len(self.pvNameY)==0:
             raise RuntimeError("pvname  y must not be ''")
 
-        self.pvX = epics.PV(self.pvNameX)
+        self.pvX = epics.PV(self.pvNameX)        
+        print('self.pvX: ' + self.pvX.info)
 
-        self.pvY = epics.PV(self.pvNameY)
+        self.pvY = epics.PV(self.pvNameY)        
+        print('self.pvY: ' + self.pvY.info)
         
         self.pvX.add_callback(self.onChangePvX)
         self.pvY.add_callback(self.onChangePvY)
@@ -135,6 +139,7 @@ class ecmcFFTGui(QtWidgets.QDialog):
         #print ('Callback X: ' + str(np.size(value)) )# + value )
         if(np.size(value)) > 0:
             self.spectX = value
+            self.xDataValid = 1
         return
 
     def callbackFuncY(self, value):
@@ -148,29 +153,34 @@ class ecmcFFTGui(QtWidgets.QDialog):
         #self.myFig.setYLabel(label)
         return
 
-    def setTitle(self):
-        #self.myFig.setTitle(label)
-        self.setWindowTitle("ecmc plot: " + self.pvNameY + ' vs ' + self.pvNameX)
-        return
-
     def plotSpect(self):
         if self.pause:
-            print('paused!!!!')
+            print('paused!')
+            return
+        if not self.xDataValid:
+            print('wait for x data!')
             return
 
-        print('plotSpect!!!!')
-        
-        # clearing old figure 
-        self.figure.clear() 
-   
-        # create an axis 
-        ax = self.figure.add_subplot(111)        
+        print('plotSpect!')        
 
+        # create an axis 
+        if self.ax is None:
+           self.ax = self.figure.add_subplot(111)
+   
         # plot data 
-        ax.plot(self.spectX,self.spectY , '*-') 
-        ax.grid()
+        if self.plotted_line is not None:
+            self.plotted_line.remove()
+
+        self.plotted_line, = self.ax.plot(self.spectX,self.spectY, 'b*-') 
+        self.ax.grid(True)
+
+        plt.xlabel(self.pvNameX +' [' + self.pvX.units + ']')
+        plt.ylabel(self.pvNameY +' [' + self.pvY.units + ']')        
         # refresh canvas 
-        self.canvas.draw() 
+        self.canvas.draw()
+
+        self.ax.autoscale(enable=False)
+
 
 
 if __name__ == "__main__":
