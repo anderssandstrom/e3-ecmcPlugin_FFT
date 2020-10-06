@@ -8,9 +8,7 @@
 #  Created on: October 6, 2020
 #      Author: Anders Sandström
 #    
-#  Heavily inspired by: https://exceptionshub.com/real-time-plotting-in-while-loop-with-matplotlib.html
-#
-#  Extends the ecmcTrend class will epics pv callbacks
+#  Plots two waveforms (x vs y) updates for each callback on the y-pv
 #  
 #*************************************************************************
 
