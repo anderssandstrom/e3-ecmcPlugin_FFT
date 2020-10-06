@@ -41,7 +41,7 @@ class comSignal(QObject):
     data_signal = pyqtSignal(object)
 
 class ecmcFFTGui(QtWidgets.QDialog):
-    def __init__(self,pvName=None):        
+    def __init__(self,xname=None,yname=None):        
         super(ecmcFFTGui, self).__init__()        
         self.comSignalX = comSignal()        
         self.comSignalX.data_signal.connect(self.callbackFuncX)
@@ -70,8 +70,8 @@ class ecmcFFTGui(QtWidgets.QDialog):
         self.pauseBtn.setStyleSheet("background-color: green");
 
         self.startval = 0
-        self.pvNameY = "IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act"
-        self.pvNameX = "IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act"
+        self.pvNameY = yname # "IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act"
+        self.pvNameX = xname # "IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act"
         self.connectPvs() # Epics        
 
         # Define the geometry of the main window
@@ -107,10 +107,10 @@ class ecmcFFTGui(QtWidgets.QDialog):
             raise RuntimeError("pvname  y must not be ''")
 
         self.pvX = epics.PV(self.pvNameX)        
-        print('self.pvX: ' + self.pvX.info)
+        #print('self.pvX: ' + self.pvX.info)
 
         self.pvY = epics.PV(self.pvNameY)        
-        print('self.pvY: ' + self.pvY.info)
+        #print('self.pvY: ' + self.pvY.info)
         
         self.pvX.add_callback(self.onChangePvX)
         self.pvY.add_callback(self.onChangePvY)
@@ -181,11 +181,20 @@ class ecmcFFTGui(QtWidgets.QDialog):
 
         self.ax.autoscale(enable=False)
 
-
+def printOutHelp():
+  print("ecmcFFTGui: Plots waveforms of FFT data (updates when on Y data callback) ")
+  print("python ecmcFFTGui.py [<x.pv>,<y.pv>]")
+  print("example: python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act")
 
 if __name__ == "__main__":
     import sys
+    print (sys.argv)
+    if len(sys.argv)!=3:
+        printOutHelp()
+        sys.exit()
+    xname=sys.argv[1]
+    yname=sys.argv[2]
     app = QtWidgets.QApplication(sys.argv)
-    window=ecmcFFTGui();
+    window=ecmcFFTGui(xname=xname,yname=yname)
     window.show()
     sys.exit(app.exec_())
