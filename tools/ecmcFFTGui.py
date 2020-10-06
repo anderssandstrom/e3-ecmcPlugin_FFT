@@ -124,13 +124,13 @@ class ecmcFFTGui(QtWidgets.QDialog):
 
     def plotSpect(self):
         if self.pause:
-            print('paused!')
+            #print('paused!')
             return
         if not self.xDataValid:
-            print('wait for x data!')
+            #print('wait for x data!')
             return
 
-        print('plotSpect!')        
+        #print('plotSpect!')        
 
         # create an axis 
         if self.ax is None:
