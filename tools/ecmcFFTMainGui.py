@@ -31,7 +31,7 @@ import threading
 
 # FFT object pvs <prefix>Plugin-FFT<fftPluginId>-<suffixname>
 # IOC_TEST:Plugin-FFT0-stat
-# IOC_TEST:Plugin-FFT0-NFFT
+# IOC_TEST:Plugin-FFT0-NFFT x
 # IOC_TEST:Plugin-FFT0-Mode-RB
 # IOC_TEST:Plugin-FFT0-SampleRate-Act x
 # IOC_TEST:Plugin-FFT0-Enable x
@@ -65,7 +65,9 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         # Data Arrays
         self.spectX = None
         self.spectY = None
-        self.rawdata = None
+        self.rawdataY = None
+        self.rawdataX = None
+
         self.enable = None
 
         self.figure = plt.figure()                            
@@ -105,6 +107,8 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         print("self.pvnNameSampleRate=" + self.pvnNameSampleRate)
         self.pvnNameNFFT = self.buildPvName('NFFT') # IOC_TEST:Plugin-FFT0-NFFT
         print("self.pvnNameNFFT=" + self.pvnNameNFFT)
+        self.pvnNameMode = self.buildPvName('Mode-RB') # IOC_TEST:Plugin-FFT0-Mode-RB
+        print("self.pvnNameMode=" + self.pvnNameMode)
 
         self.connectPvs()
         
@@ -119,11 +123,21 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.sourceStr = self.pvSource.get(as_string=True)
         self.sampleRate = self.pvSampleRate.get()
         self.NFFT = self.pvNFFT.get()
-
+        
+        self.mode = self.pvMode.get()        
+        self.modeStr = "NO_MODE"
+        self.triggBtn.setEnabled(False) # Only enable if mode = TRIGG = 2
+        if self.mode == 1:
+            self.modeStr = "CONT"           
+        if self.mode == 2:
+           self.modeStr = "TRIGG"
+           self.triggBtn.setEnabled(True)
         
         # Fix layout
         self.setGeometry(300, 300, 900, 700)
-        self.setWindowTitle("ecmc FFT Main plot: prefix=" + self.pvPrefixStr + " , fftId=" + str(self.fftPluginId) +", source="  + self.sourceStr + ", rate=" + str(self.sampleRate) + ", NFFT=" + str(self.NFFT) )
+        self.setWindowTitle("ecmc FFT Main plot: prefix=" + self.pvPrefixStr + " , fftId=" + str(self.fftPluginId) + 
+                            ", source="  + self.sourceStr + ", rate=" + str(self.sampleRate) + 
+                            ", nfft=" + str(self.NFFT) + ", mode=" + self.modeStr)
         layoutVert = QVBoxLayout()
         layoutVert.addWidget(self.toolbar) 
         layoutVert.addWidget(self.canvas) 
@@ -186,7 +200,12 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
             raise RuntimeError("pvname NFFT must not be 'None'")
         if len(self.pvnNameNFFT)==0:
             raise RuntimeError("pvname NFFT must not be ''")
-            
+        
+        if self.pvnNameMode is None:
+            raise RuntimeError("pvname mode must not be 'None'")
+        if len(self.pvnNameMode)==0:
+            raise RuntimeError("pvname mode must not be ''")
+        
         self.pvSpectX = epics.PV(self.pvNameSpectX)
         #print('self.pvSpectX: ' + self.pvSpectX.info)
 
@@ -211,6 +230,9 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.pvNFFT = epics.PV(self.pvnNameNFFT)
         #print('self.pvNFFT: ' + self.pvNFFT.info)
 
+        self.pvMode = epics.PV(self.pvnNameMode)
+        #print('self.pvMode: ' + self.pvMode.info)        
+
         self.pvSpectX.add_callback(self.onChangePvSpectX)
         self.pvSpectY.add_callback(self.onChangePvSpectY)
         self.pvRawData.add_callback(self.onChangePvrawData)
@@ -234,7 +256,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
             self.pauseBtn.setStyleSheet("background-color: green")
             # Retrigger plots with newest values
             self.comSignalSpectY.data_signal.emit(self.spectY)
-            self.comSignalRawData.data_signal.emit(self.rawdata)
+            self.comSignalRawData.data_signal.emit(self.rawdataY)
         return
 
     def enableBtnAction(self):
@@ -264,7 +286,11 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
 
     def callbackFuncrawData(self, value):
         if(np.size(value)) > 0:
-            self.rawdata = value
+            if self.rawdataX is None or np.size(value) != np.size(self.rawdataY):
+                self.rawdataX = np.arange(-np.size(value)/self.sampleRate, 0, 1/self.sampleRate)
+
+            self.rawdataY = value
+            # print("Size X,Y: " + str(np.size(self.rawdataX))+ ", " +str(np.size(self.rawdataY)))
             self.plotRaw()
         return
 
@@ -276,7 +302,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         if self.spectY is None:
             return
         
-        print("plotSpect")
+        # print("plotSpect")
         # create an axis for spectrum
         if self.axSpect is None:
            self.axSpect = self.figure.add_subplot(212)
@@ -299,7 +325,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
     def plotRaw(self):
         if self.pause:            
             return
-        if self.rawdata is None:
+        if self.rawdataY is None:
             return
         
         # create an axis for spectrum
@@ -310,10 +336,10 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         if self.plottedLineRaw is not None:
             self.plottedLineRaw.remove()
 
-        self.plottedLineRaw, = self.axRaw.plot(self.rawdata, 'b*-') 
+        self.plottedLineRaw, = self.axRaw.plot(self.rawdataX,self.rawdataY, 'b*-') 
         self.axRaw.grid(True)
 
-        self.axRaw.set_xlabel('Time []')
+        self.axRaw.set_xlabel('Time [s]')
         self.axRaw.set_ylabel(self.pvNameRawDataY +' [' + self.pvRawData.units + ']') 
 
         # refresh canvas 
