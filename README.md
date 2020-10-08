@@ -295,7 +295,8 @@ python ecmcFFTMainGui.py IOC_TEST:  0
 
 ### FFT GUI (only FFT plot)
 
-A simple tool, [ecmcFFTGui.py](tools/ecmcFFTGui.py),  to visualize the calculated spectrum can be found in the tools directory.
+A simple tool, [ecmcFFTGui.py](tools/ecmcFFTGui.py), to visualize the calculated spectrum can be found in the tools directory.
+The GUI connects to the plugin records over pypics framwork.
 
 Example: ecmcFFTGui.py help printout
 ```
@@ -305,11 +306,29 @@ python ecmcFFTGui.py <x.pv> <y.pv>
 example: python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act
 ```
 
-Example: Start ecmcFFTGui.py for two spectrum waveform pvs
+Example: Start ecmcFFTGui.py for spectrum amplitude and freq. waveform pvs
 ```
 python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act
 ```
 ![ecmcFFTMainGui.py](docs/gui/ecmcFFTGui.png)
+
+### Array GUI (generic waveform plt)
+A simple generic tool, [ecmcFFTGui.py](tools/ecmcFFTGui.py), to visualize wavforms.
+The GUI connects to the plugin records over pypics framwork.
+
+Example: ecmcArrayGui.py help printout
+```
+python ecmcArrayGui.py 
+ecmcArrayGui: Plots waveforms data (updates on data callback). 
+python ecmcArrayGui.py  <y.pv>
+example: python ecmcArrayGui.py IOC_TEST:Plugin-FFT0-Raw-Data-Act
+```
+
+Example: Start ecmcArrayGui.py for raw data wavform
+```
+python ecmcArrayGui.py IOC_TEST:Plugin-FFT0-Raw-Data-Act
+```
+![ecmcFFTMainGui.py](docs/gui/ecmcArrayGui.png)
 
 ### Needed packages:
 * python 3.5
