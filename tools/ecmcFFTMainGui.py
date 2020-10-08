@@ -32,7 +32,7 @@ import threading
 # FFT object pvs <prefix>Plugin-FFT<fftPluginId>-<suffixname>
 # IOC_TEST:Plugin-FFT0-stat
 # IOC_TEST:Plugin-FFT0-NFFT x
-# IOC_TEST:Plugin-FFT0-Mode-RB
+# IOC_TEST:Plugin-FFT0-Mode-RB x
 # IOC_TEST:Plugin-FFT0-SampleRate-Act x
 # IOC_TEST:Plugin-FFT0-Enable x
 # IOC_TEST:Plugin-FFT0-Trigg x
@@ -53,12 +53,16 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.fftPluginId = fftPluginId
 
         # Callbacks through signals
-        self.comSignalSpectX = comSignal()        
+        self.comSignalSpectX = comSignal()
         self.comSignalSpectX.data_signal.connect(self.callbackFuncSpectX)
-        self.comSignalSpectY = comSignal()        
+        self.comSignalSpectY = comSignal()
         self.comSignalSpectY.data_signal.connect(self.callbackFuncSpectY)
-        self.comSignalRawData = comSignal()        
+        self.comSignalRawData = comSignal()
         self.comSignalRawData.data_signal.connect(self.callbackFuncrawData)
+        self.comSignalEnable = comSignal()
+        self.comSignalEnable.data_signal.connect(self.callbackFuncEnable)
+        self.comSignalMode = comSignal()
+        self.comSignalMode.data_signal.connect(self.callbackFuncMode)
 
         self.pause = 0
 
@@ -90,6 +94,12 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.triggBtn.setFixedSize(100, 50)
         self.triggBtn.clicked.connect(self.triggBtnAction)            
 
+        self.modeCombo = QComboBox()
+        self.modeCombo.setFixedSize(100, 50)
+        self.modeCombo.currentIndexChanged.connect(self.newModeIndexChanged)
+        self.modeCombo.addItem("CONT")
+        self.modeCombo.addItem("TRIGG")
+        
         # Pv names based on structure:  <prefix>Plugin-FFT<fftPluginId>-<suffixname>
         self.pvNameSpectY = self.buildPvName('Spectrum-Amp-Act') # "IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act"
         print("self.pvNameSpectY=" + self.pvNameSpectY)
@@ -125,19 +135,24 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.NFFT = self.pvNFFT.get()
         
         self.mode = self.pvMode.get()        
+
         self.modeStr = "NO_MODE"
         self.triggBtn.setEnabled(False) # Only enable if mode = TRIGG = 2
         if self.mode == 1:
-            self.modeStr = "CONT"           
+            self.modeStr = "CONT"
+            self.modeCombo.setCurrentIndex(self.mode-1) # Index starta t zero
+
         if self.mode == 2:
-           self.modeStr = "TRIGG"
-           self.triggBtn.setEnabled(True)
+            self.modeStr = "TRIGG"
+            self.triggBtn.setEnabled(True)
+            self.modeCombo.setCurrentIndex(self.mode-1) # Index starta t zero
         
         # Fix layout
         self.setGeometry(300, 300, 900, 700)
         self.setWindowTitle("ecmc FFT Main plot: prefix=" + self.pvPrefixStr + " , fftId=" + str(self.fftPluginId) + 
                             ", source="  + self.sourceStr + ", rate=" + str(self.sampleRate) + 
-                            ", nfft=" + str(self.NFFT) + ", mode=" + self.modeStr)
+                            ", nfft=" + str(self.NFFT))
+
         layoutVert = QVBoxLayout()
         layoutVert.addWidget(self.toolbar) 
         layoutVert.addWidget(self.canvas) 
@@ -146,6 +161,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         layoutControl.addWidget(self.pauseBtn)
         layoutControl.addWidget(self.enableBtn)
         layoutControl.addWidget(self.triggBtn)
+        layoutControl.addWidget(self.modeCombo)
     
         frameControl = QFrame(self)
         frameControl.setFixedHeight(70)
@@ -236,9 +252,18 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.pvSpectX.add_callback(self.onChangePvSpectX)
         self.pvSpectY.add_callback(self.onChangePvSpectY)
         self.pvRawData.add_callback(self.onChangePvrawData)
+        self.pvEnable.add_callback(self.onChangePvEnable)
+        self.pvMode.add_callback(self.onChangePvMode)
 
         QCoreApplication.processEvents()
     
+    ###### Pv monitor callbacks
+    def onChangePvMode(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
+        self.comSignalMode.data_signal.emit(value)
+
+    def onChangePvEnable(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
+        self.comSignalEnable.data_signal.emit(value)
+
     def onChangePvSpectX(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
         self.comSignalSpectX.data_signal.emit(value)
 
@@ -248,29 +273,33 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
     def onChangePvrawData(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
         self.comSignalRawData.data_signal.emit(value)        
 
-    def pauseBtnAction(self):   
-        self.pause = not self.pause
-        if self.pause:
-            self.pauseBtn.setStyleSheet("background-color: red")
-        else:
-            self.pauseBtn.setStyleSheet("background-color: green")
-            # Retrigger plots with newest values
-            self.comSignalSpectY.data_signal.emit(self.spectY)
-            self.comSignalRawData.data_signal.emit(self.rawdataY)
+    ###### Signal callbacks    
+    def callbackFuncMode(self, value):
+        if value < 1 or value> 2:
+            self.modeStr = "NO_MODE"
+            print('callbackFuncMode: Error Invalid mode.')
+            return
+
+        self.mode = value
+        self.modeCombo.setCurrentIndex(self.mode-1) # Index starta t zero
+        
+        if self.mode == 1:
+            self.modeStr = "CONT"
+            self.triggBtn.setEnabled(False) # Only enable if mode = TRIGG = 2
+                        
+        if self.mode == 2:
+           self.modeStr = "TRIGG"
+           self.triggBtn.setEnabled(True)
+                
         return
 
-    def enableBtnAction(self):
-        self.enable = not self.enable
-        self.pvEnable.put(self.enable)
+    def callbackFuncEnable(self, value):
+        self.enable = value        
         if self.enable:
           self.enableBtn.setStyleSheet("background-color: green")
         else:
           self.enableBtn.setStyleSheet("background-color: red")
         return
-
-    def triggBtnAction(self):
-        self.pvTrigg.put(True)
-        return        
 
     def callbackFuncSpectX(self, value):
         if(np.size(value)) > 0:
@@ -294,6 +323,37 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
             self.plotRaw()
         return
 
+    ###### Widget callbacks
+    def pauseBtnAction(self):   
+        self.pause = not self.pause
+        if self.pause:
+            self.pauseBtn.setStyleSheet("background-color: red")
+        else:
+            self.pauseBtn.setStyleSheet("background-color: green")
+            # Retrigger plots with newest values
+            self.comSignalSpectY.data_signal.emit(self.spectY)
+            self.comSignalRawData.data_signal.emit(self.rawdataY)
+        return
+
+    def enableBtnAction(self):
+        self.enable = not self.enable
+        self.pvEnable.put(self.enable)
+        if self.enable:
+          self.enableBtn.setStyleSheet("background-color: green")
+        else:
+          self.enableBtn.setStyleSheet("background-color: red")
+        return
+
+    def triggBtnAction(self):
+        self.pvTrigg.put(True)
+        return
+
+    def newModeIndexChanged(self,index):
+        if index==0 or  index==1:
+            self.pvMode.put(index+1)
+        return
+
+    ###### Plotting
     def plotSpect(self):
         if self.pause:            
             return
