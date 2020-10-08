@@ -825,7 +825,7 @@ void ecmcFFT::initAsyn() {
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_RATE;
 
-  if( createParam(0, paramName.c_str(), asynParamInt32, &asynSRateId_ ) != asynSuccess ) {
+  if( createParam(0, paramName.c_str(), asynParamFloat64, &asynSRateId_ ) != asynSuccess ) {
     throw std::runtime_error("Failed create asyn parameter trigg");
   }
   setDoubleParam(asynSRateId_, cfgFFTSampleRateHz_);
