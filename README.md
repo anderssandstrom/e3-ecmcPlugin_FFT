@@ -309,6 +309,8 @@ Example: Start ecmcFFTGui.py for two spectrum waveform pvs
 ```
 python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act
 ```
+![ecmcFFTMainGui.py](docs/gui/ecmcFFTGui.png)
+
 ### Needed packages:
 * python 3.5
 * epics
