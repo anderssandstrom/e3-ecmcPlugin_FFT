@@ -75,6 +75,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-X-Axis-Act"){
 }
 
 record(bo,"$(P)Plugin-FFT${INDEX}-Enable"){
+  info(asyn:READBACK,"1")
   field(DESC, "FFT Enable")
   field(DTYP,"asynInt32")
   field(OUT, "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.enable")
