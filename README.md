@@ -216,6 +216,7 @@ Note: The FFT asynparameters will not be visible by the ecmcReport iocsh command
 ## PLC interface
 
 ### PLC Functions
+
 1. "fft_clear(arg0);"         double fft_clear(index) : Clear/resets all buffers fft[index].
 2. "fft_enable(arg0, arg1);"  double fft_enable(index, enable) : Set enable for fft[index].
 3. "fft_trigg(arg0);"         double fft_trigg(index) : Trigg new measurement for fft[index]. Will clear buffers.
@@ -270,6 +271,30 @@ static.sineval:=sin(2*pi*${FREQ=5}*static.time);
 
 ## FFT GUI
 
+### FFT GUI (FFT and rawdata plots + controls)
+A simple tool, [ecmcFFTMainGui.py](tools/ecmcFFTMainGui.py), to visualize the calculated spectrum, rawdata and also plugin controls can be found in the tools directory. The GUI connects to the plugin records over pypics framwork.
+
+Example: ecmcFFTMainGui.py help printout
+```
+python ecmcFFTMainGui.py 
+ecmcFFTMainGui: Plots waveforms of FFT data (updates on Y data callback). 
+python ecmcFFTMainGui.py <prefix> <fftId>
+<prefix>:  Ioc prefix ('IOC_TEST:')
+<fftId> :  Id of fft plugin ('0')
+example : python ecmcFFTMainGui.py 'IOC_TEST:' '0'
+Will connect to Pvs: <prefix>Plugin-FFT<fftId>-*
+```
+
+Example: Start ecmcFFMainTGui.py for:
+* predix="IOC_TEST:"
+* fftPluginId=0  (the first loaded FFT plugin in the ioc)
+```
+python ecmcFFTMainGui.py IOC_TEST:  0
+```
+![ecmcFFTMainGui.py](docs/gui/ecmcFFTMainGui.png)
+
+### FFT GUI (only FFT plot)
+
 A simple tool, [ecmcFFTGui.py](tools/ecmcFFTGui.py),  to visualize the calculated spectrum can be found in the tools directory.
 
 Example: ecmcFFTGui.py help printout
@@ -284,17 +309,13 @@ Example: Start ecmcFFTGui.py for two spectrum waveform pvs
 ```
 python ecmcFFTGui.py IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act
 ```
-Needed packages:
-
+### Needed packages:
 * python 3.5
-
 * epics
-
 * PyQt5
-
 * numpy 
-
 * matplotlib
+
 
 ## Plugin info
 
