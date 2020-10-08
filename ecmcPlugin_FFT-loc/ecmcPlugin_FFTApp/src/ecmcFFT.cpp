@@ -754,7 +754,7 @@ void ecmcFFT::initAsyn() {
   if( createParam(0, paramName.c_str(), asynParamFloat64Array, &asynPPDataId_ ) != asynSuccess ) {
     throw std::runtime_error("Failed create asyn parameter preprocdata");
   }
-  doCallbacksFloat64Array(prepProcDataBuffer_, cfgNfft_, asynRawDataId_,0);
+  doCallbacksFloat64Array(prepProcDataBuffer_, cfgNfft_, asynPPDataId_,0);
 
 
 
@@ -765,7 +765,7 @@ void ecmcFFT::initAsyn() {
   if( createParam(0, paramName.c_str(), asynParamFloat64Array, &asynFFTAmpId_ ) != asynSuccess ) {
     throw std::runtime_error("Failed create asyn parameter fftamplitude");
   }
-  doCallbacksFloat64Array(fftBufferResultAmp_, cfgNfft_/2+1, asynFFTXAxisId_,0);
+  doCallbacksFloat64Array(fftBufferResultAmp_, cfgNfft_/2+1, asynFFTAmpId_,0);
 
   // Add fft mode "plugin.fft%d.mode"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
