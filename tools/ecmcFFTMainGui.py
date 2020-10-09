@@ -48,9 +48,19 @@ class comSignal(QObject):
 
 class ecmcFFTMainGui(QtWidgets.QDialog):
     def __init__(self,prefix=None,fftPluginId=None):        
-        super(ecmcFFTMainGui, self).__init__()        
+        super(ecmcFFTMainGui, self).__init__()
+        self.offline = False
         self.pvPrefixStr = prefix
         self.fftPluginId = fftPluginId
+        self.allowSave = False
+        if prefix is None or fftPluginId is None:
+            self.offline = True
+            self.pause = True
+            self.enable = False           
+        else:
+            self.buildPvNames()
+            self.offline = False
+            self.pause = False            
 
         # Callbacks through signals
         self.comSignalSpectX = comSignal()
@@ -66,15 +76,22 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
 
         self.pause = 0
 
-        # Data Arrays
+        # Data
         self.spectX = None
         self.spectY = None
         self.rawdataY = None
         self.rawdataX = None
-
         self.enable = None
 
-        self.figure = plt.figure()                            
+        self.createWidgets()
+        self.connectPvs()
+        self.setStatusOfWidgets()
+
+        return
+
+    def createWidgets(self):
+
+        self.figure = plt.figure()
         self.plottedLineSpect = None
         self.plottedLineRaw = None
         self.axSpect = None
@@ -85,74 +102,27 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.pauseBtn.setFixedSize(100, 50)
         self.pauseBtn.clicked.connect(self.pauseBtnAction)        
         self.pauseBtn.setStyleSheet("background-color: green")
-
+        self.openBtn = QPushButton(text = 'open data')
+        self.openBtn.setFixedSize(100, 50)
+        self.openBtn.clicked.connect(self.openBtnAction)
+        self.saveBtn = QPushButton(text = 'save data')
+        self.saveBtn.setFixedSize(100, 50)
+        self.saveBtn.clicked.connect(self.saveBtnAction)
         self.enableBtn = QPushButton(text = 'enable FFT')
         self.enableBtn.setFixedSize(100, 50)
         self.enableBtn.clicked.connect(self.enableBtnAction)            
-
         self.triggBtn = QPushButton(text = 'trigg FFT')
         self.triggBtn.setFixedSize(100, 50)
         self.triggBtn.clicked.connect(self.triggBtnAction)            
-
         self.modeCombo = QComboBox()
         self.modeCombo.setFixedSize(100, 50)
         self.modeCombo.currentIndexChanged.connect(self.newModeIndexChanged)
         self.modeCombo.addItem("CONT")
         self.modeCombo.addItem("TRIGG")
-        
-        # Pv names based on structure:  <prefix>Plugin-FFT<fftPluginId>-<suffixname>
-        self.pvNameSpectY = self.buildPvName('Spectrum-Amp-Act') # "IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act"
-        print("self.pvNameSpectY=" + self.pvNameSpectY)
-        self.pvNameSpectX = self.buildPvName('Spectrum-X-Axis-Act') # "IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act"
-        print("self.pvNameSpectX=" + self.pvNameSpectX)
-        self.pvNameRawDataY = self.buildPvName('Raw-Data-Act') # IOC_TEST:Plugin-FFT0-Raw-Data-Act
-        print("self.pvNameRawDataY=" + self.pvNameRawDataY)
-        self.pvnNameEnable = self.buildPvName('Enable') # IOC_TEST:Plugin-FFT0-Enable
-        print("self.pvnNameEnable=" + self.pvnNameEnable)
-        self.pvnNameTrigg = self.buildPvName('Trigg') # IOC_TEST:Plugin-FFT0-Trigg
-        print("self.pvnNameTrigg=" + self.pvnNameTrigg)
-        self.pvnNameSource = self.buildPvName('Source') # IOC_TEST:Plugin-FFT0-Source
-        print("self.pvnNameSource=" + self.pvnNameSource)
-        self.pvnNameSampleRate = self.buildPvName('SampleRate-Act') # IOC_TEST:Plugin-FFT0-SampleRate-Act
-        print("self.pvnNameSampleRate=" + self.pvnNameSampleRate)
-        self.pvnNameNFFT = self.buildPvName('NFFT') # IOC_TEST:Plugin-FFT0-NFFT
-        print("self.pvnNameNFFT=" + self.pvnNameNFFT)
-        self.pvnNameMode = self.buildPvName('Mode-RB') # IOC_TEST:Plugin-FFT0-Mode-RB
-        print("self.pvnNameMode=" + self.pvnNameMode)
 
-        self.connectPvs()
-        
-        # Check actual value of pvs
-        if(self.pvEnable.get()>0):
-          self.enableBtn.setStyleSheet("background-color: green")
-          self.enable = True
-        else:
-          self.enableBtn.setStyleSheet("background-color: red")
-          self.enable = False
-
-        self.sourceStr = self.pvSource.get(as_string=True)
-        self.sampleRate = self.pvSampleRate.get()
-        self.NFFT = self.pvNFFT.get()
-        
-        self.mode = self.pvMode.get()        
-
-        self.modeStr = "NO_MODE"
-        self.triggBtn.setEnabled(False) # Only enable if mode = TRIGG = 2
-        if self.mode == 1:
-            self.modeStr = "CONT"
-            self.modeCombo.setCurrentIndex(self.mode-1) # Index starta t zero
-
-        if self.mode == 2:
-            self.modeStr = "TRIGG"
-            self.triggBtn.setEnabled(True)
-            self.modeCombo.setCurrentIndex(self.mode-1) # Index starta t zero
-        
         # Fix layout
         self.setGeometry(300, 300, 900, 700)
-        self.setWindowTitle("ecmc FFT Main plot: prefix=" + self.pvPrefixStr + " , fftId=" + str(self.fftPluginId) + 
-                            ", source="  + self.sourceStr + ", rate=" + str(self.sampleRate) + 
-                            ", nfft=" + str(self.NFFT))
-
+  
         layoutVert = QVBoxLayout()
         layoutVert.addWidget(self.toolbar) 
         layoutVert.addWidget(self.canvas) 
@@ -162,20 +132,86 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         layoutControl.addWidget(self.enableBtn)
         layoutControl.addWidget(self.triggBtn)
         layoutControl.addWidget(self.modeCombo)
-    
+        layoutControl.addWidget(self.saveBtn)
+        layoutControl.addWidget(self.openBtn)
+
         frameControl = QFrame(self)
         frameControl.setFixedHeight(70)
         frameControl.setLayout(layoutControl)
 
-        layoutVert.addWidget(frameControl) 
 
+        layoutVert.addWidget(frameControl) 
         self.setLayout(layoutVert)                
-        return
+
+    def setStatusOfWidgets(self):
+
+        if self.offline:
+            self.enableBtn.setStyleSheet("background-color: grey")
+            self.enableBtn.setEnabled(False)
+            self.pauseBtn.setStyleSheet("background-color: grey")
+            self.pauseBtn.setEnabled(False)
+            self.modeCombo.setEnabled(False)
+            self.triggBtn.setEnabled(False)
+            self.setWindowTitle("ecmc FFT Main plot: Offline")
+
+        else:
+           self.modeCombo.setEnabled(True)
+           # Check actual value of pvs
+           if(self.pvEnable.get()>0):
+             self.enableBtn.setStyleSheet("background-color: green")
+             self.enable = True
+           else:
+             self.enableBtn.setStyleSheet("background-color: red")
+             self.enable = False
+   
+           self.sourceStr = self.pvSource.get(as_string=True)
+           self.sampleRate = self.pvSampleRate.get()
+           self.NFFT = self.pvNFFT.get()        
+           self.mode = self.pvMode.get()        
+           self.modeStr = "NO_MODE"
+           self.triggBtn.setEnabled(False) # Only enable if mode = TRIGG = 2
+           if self.mode == 1:
+               self.modeStr = "CONT"
+               self.modeCombo.setCurrentIndex(self.mode-1) # Index starta t zero
+   
+           if self.mode == 2:
+               self.modeStr = "TRIGG"
+               self.triggBtn.setEnabled(True)
+               self.modeCombo.setCurrentIndex(self.mode-1) # Index starta t zero
+   
+           self.setWindowTitle("ecmc FFT Main plot: prefix=" + self.pvPrefixStr + " , fftId=" + str(self.fftPluginId) + 
+                               ", source="  + self.sourceStr + ", rate=" + str(self.sampleRate) + 
+                               ", nfft=" + str(self.NFFT))       
+
+    def buildPvNames(self):
+        if self.offline:
+           self.pvNameSpectY = None
+           self.pvNameSpectX = None
+           self.pvNameRawDataY = None
+           self.pvnNameEnable = None
+           self.pvnNameTrigg = None
+           self.pvnNameSource = None
+           self.pvnNameSampleRate = None
+           self.pvnNameNFFT = None
+           self.pvnNameMode = None
+        else:
+           # Pv names based on structure:  <prefix>Plugin-FFT<fftPluginId>-<suffixname>
+           self.pvNameSpectY = self.buildPvName('Spectrum-Amp-Act') # "IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act"        
+           self.pvNameSpectX = self.buildPvName('Spectrum-X-Axis-Act') # "IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act"
+           self.pvNameRawDataY = self.buildPvName('Raw-Data-Act') # IOC_TEST:Plugin-FFT0-Raw-Data-Act
+           self.pvnNameEnable = self.buildPvName('Enable') # IOC_TEST:Plugin-FFT0-Enable
+           self.pvnNameTrigg = self.buildPvName('Trigg') # IOC_TEST:Plugin-FFT0-Trigg
+           self.pvnNameSource = self.buildPvName('Source') # IOC_TEST:Plugin-FFT0-Source
+           self.pvnNameSampleRate = self.buildPvName('SampleRate-Act') # IOC_TEST:Plugin-FFT0-SampleRate-Act
+           self.pvnNameNFFT = self.buildPvName('NFFT') # IOC_TEST:Plugin-FFT0-NFFT
+           self.pvnNameMode = self.buildPvName('Mode-RB') # IOC_TEST:Plugin-FFT0-Mode-RB
 
     def buildPvName(self, suffixname):
         return self.pvPrefixStr + 'Plugin-FFT' + str(self.fftPluginId) + '-' + suffixname 
 
-    def connectPvs(self):        
+    def connectPvs(self):
+        if self.offline:
+            return
 
         if self.pvNameSpectX is None:
             raise RuntimeError("pvname X spect must not be 'None'")
@@ -223,54 +259,45 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
             raise RuntimeError("pvname mode must not be ''")
         
         self.pvSpectX = epics.PV(self.pvNameSpectX)
-        #print('self.pvSpectX: ' + self.pvSpectX.info)
-
         self.pvSpectY = epics.PV(self.pvNameSpectY)
-        #print('self.pvSpectY: ' + self.pvSpectY.info)
-
         self.pvRawData = epics.PV(self.pvNameRawDataY)
-        #print('self.pvRawData: ' + self.pvSpectY.info)
-
         self.pvEnable = epics.PV(self.pvnNameEnable)
-        #print('self.pvEnable: ' + self.pvEnable.info)
-        
         self.pvTrigg = epics.PV(self.pvnNameTrigg)
-        #print('self.pvTrigg: ' + self.pvTrigg.info)
-
         self.pvSource = epics.PV(self.pvnNameSource)
-        #print('self.pvSource: ' + self.pvSource.info)
-
         self.pvSampleRate = epics.PV(self.pvnNameSampleRate)
-        #print('self.pvSampleRate: ' + self.pvSampleRate.info)
-
         self.pvNFFT = epics.PV(self.pvnNameNFFT)
-        #print('self.pvNFFT: ' + self.pvNFFT.info)
-
         self.pvMode = epics.PV(self.pvnNameMode)
-        #print('self.pvMode: ' + self.pvMode.info)        
-
         self.pvSpectX.add_callback(self.onChangePvSpectX)
         self.pvSpectY.add_callback(self.onChangePvSpectY)
         self.pvRawData.add_callback(self.onChangePvrawData)
         self.pvEnable.add_callback(self.onChangePvEnable)
         self.pvMode.add_callback(self.onChangePvMode)
-
         QCoreApplication.processEvents()
     
     ###### Pv monitor callbacks
     def onChangePvMode(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
+        if self.pause: 
+            return
         self.comSignalMode.data_signal.emit(value)
 
     def onChangePvEnable(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
+        if self.pause: 
+            return
         self.comSignalEnable.data_signal.emit(value)
 
     def onChangePvSpectX(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
+        if self.pause: 
+            return
         self.comSignalSpectX.data_signal.emit(value)
 
     def onChangePvSpectY(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
+        if self.pause: 
+            return
         self.comSignalSpectY.data_signal.emit(value)        
 
     def onChangePvrawData(self,pvname=None, value=None, char_value=None,timestamp=None, **kw):
+        if self.pause: 
+            return
         self.comSignalRawData.data_signal.emit(value)        
 
     ###### Signal callbacks    
@@ -319,7 +346,6 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
                 self.rawdataX = np.arange(-np.size(value)/self.sampleRate, 0, 1/self.sampleRate)
 
             self.rawdataY = value
-            # print("Size X,Y: " + str(np.size(self.rawdataX))+ ", " +str(np.size(self.rawdataY)))
             self.plotRaw()
         return
 
@@ -352,6 +378,77 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         if index==0 or  index==1:
             self.pvMode.put(index+1)
         return
+    
+    def openBtnAction(self):
+        if not self.offline:
+           self.pause = 1  # pause while open if online
+           self.pauseBtn.setStyleSheet("background-color: red")
+           QCoreApplication.processEvents()
+                   
+        fname = QFileDialog.getOpenFileName(self, 'Open file', '.', "Data files (*.npz)")
+        if fname is None:
+            return
+        if np.size(fname) != 2:            
+            return
+        if len(fname[0])<=0:
+            return        
+        
+        npzfile = np.load(fname[0])
+
+        # verify scope plugin
+        if npzfile['plugin'] != "FFT":
+            print ("Invalid data type (wrong plugin type)")
+            return
+        
+        # File valid                 
+        self.rawdataX     = npzfile['rawdataX']        
+        self.rawdataY     = npzfile['rawdataY']        
+        self.spectX       = npzfile['spectX']          
+        self.spectY       = npzfile['spectY']          
+        self.sourceStr    = npzfile['sourceStr']       
+        self.sampleRate   = npzfile['sampleRate']      
+        self.NFFT         = npzfile['NFFT']            
+        self.mode         = npzfile['mode']            
+        self.prefix       = npzfile['prefix']          
+        self.fftPluginId  = npzfile['fftPluginId']     
+
+        if self.offline: # do not overwrite if online mode
+           self.buildPvNames()
+        
+        # trigg draw
+        self.comSignalMode.data_signal.emit(self.mode)
+        self.comSignalSpectX.data_signal.emit(self.spectX)
+        self.comSignalSpectY.data_signal.emit(self.spectY)        
+        self.comSignalRawData.data_signal.emit(self.rawdataY)        
+        
+        self.setStatusOfWidgets()
+        return
+
+    def saveBtnAction(self):
+        fname = QFileDialog.getSaveFileName(self, 'Save file', '.', "Data files (*.npz)")
+        if fname is None:
+            return
+        if np.size(fname) != 2:            
+            return
+        if len(fname[0])<=0:
+            return
+        # Save all relevant data
+        np.savez(fname[0],
+                 plugin                   = "FFT",
+                 rawdataX                 = self.rawdataX,
+                 rawdataY                 = self.rawdataY,
+                 spectX                   = self.spectX,
+                 spectY                   = self.spectY,     
+                 sourceStr                = self.sourceStr,
+                 sampleRate               = self.sampleRate,
+                 NFFT                     = self.NFFT,
+                 mode                     = self.mode,
+                 prefix                   = self.prefix,
+                 fftPluginId              = self.fftPluginId
+                 )
+
+
+        return
 
     ###### Plotting
     def plotSpect(self):
@@ -362,7 +459,6 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         if self.spectY is None:
             return
         
-        # print("plotSpect")
         # create an axis for spectrum
         if self.axSpect is None:
            self.axSpect = self.figure.add_subplot(212)
@@ -374,17 +470,18 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.plottedLineSpect, = self.axSpect.plot(self.spectX,self.spectY, 'b*-') 
         self.axSpect.grid(True)
 
-        self.axSpect.set_xlabel(self.pvNameSpectX +' [' + self.pvSpectX.units + ']')
-        self.axSpect.set_ylabel(self.pvNameSpectY +' [' + self.pvSpectY.units + ']')
+        if self.offline: # No units offline
+           self.axSpect.set_xlabel(self.pvNameSpectX)
+           self.axSpect.set_ylabel(self.pvNameSpectY)
+        else:
+           self.axSpect.set_xlabel(self.pvNameSpectX +' [' + self.pvSpectX.units + ']')
+           self.axSpect.set_ylabel(self.pvNameSpectY +' [' + self.pvSpectY.units + ']')
 
         # refresh canvas 
         self.canvas.draw()
-
         self.axSpect.autoscale(enable=False)
 
     def plotRaw(self):
-        if self.pause:            
-            return
         if self.rawdataY is None:
             return
         
@@ -417,11 +514,17 @@ def printOutHelp():
 
 if __name__ == "__main__":
     import sys    
-    if len(sys.argv)!=3:
-        printOutHelp()
-        sys.exit()
-    prefix=sys.argv[1]
-    fftid=int(sys.argv[2])
+    prefix = None
+    fftid = None
+    if len(sys.argv) == 1:
+       prefix = None
+       fftid = None
+    elif len(sys.argv) == 3:
+       prefix = sys.argv[1]
+       fftid = int(sys.argv[2])
+    else:
+       printOutHelp()
+       sys.exit()    
     app = QtWidgets.QApplication(sys.argv)
     window=ecmcFFTMainGui(prefix=prefix,fftPluginId=fftid)
     window.show()
