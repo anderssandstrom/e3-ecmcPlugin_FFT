@@ -82,6 +82,8 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.rawdataY = None
         self.rawdataX = None
         self.enable = None
+        
+        self.pvMode = None
 
         self.createWidgets()
         self.connectPvs()
@@ -152,8 +154,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
             self.pauseBtn.setEnabled(False)
             self.modeCombo.setEnabled(False)
             self.triggBtn.setEnabled(False)
-            self.setWindowTitle("ecmc FFT Main plot: Offline")
-
+            self.setWindowTitle("ecmc FFT Main plot: Offline")            
         else:
            self.modeCombo.setEnabled(True)
            # Check actual value of pvs
@@ -342,7 +343,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
 
     def callbackFuncrawData(self, value):
         if(np.size(value)) > 0:
-            if self.rawdataX is None or np.size(value) != np.size(self.rawdataY):
+            if self.rawdataX is None or np.size(value) != np.size(self.rawdataY):                
                 self.rawdataX = np.arange(-np.size(value)/self.sampleRate, 0, 1/self.sampleRate)
 
             self.rawdataY = value
@@ -375,8 +376,9 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         return
 
     def newModeIndexChanged(self,index):
-        if index==0 or  index==1:
-            self.pvMode.put(index+1)
+        if index==0 or index==1:
+            if not self.offline and self.pvMode is not None:
+               self.pvMode.put(index+1)
         return
     
     def openBtnAction(self):
@@ -405,11 +407,11 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.rawdataY     = npzfile['rawdataY']        
         self.spectX       = npzfile['spectX']          
         self.spectY       = npzfile['spectY']          
-        self.sourceStr    = npzfile['sourceStr']       
+        self.sourceStr    = str(npzfile['sourceStr'])
         self.sampleRate   = npzfile['sampleRate']      
         self.NFFT         = npzfile['NFFT']            
         self.mode         = npzfile['mode']            
-        self.prefix       = npzfile['prefix']          
+        self.pvPrefixStr  = str(npzfile['pvPrefixStr'])
         self.fftPluginId  = npzfile['fftPluginId']     
 
         if self.offline: # do not overwrite if online mode
@@ -443,7 +445,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
                  sampleRate               = self.sampleRate,
                  NFFT                     = self.NFFT,
                  mode                     = self.mode,
-                 prefix                   = self.prefix,
+                 pvPrefixStr                   = self.pvPrefixStr,
                  fftPluginId              = self.fftPluginId
                  )
 
@@ -452,8 +454,6 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
 
     ###### Plotting
     def plotSpect(self):
-        if self.pause:            
-            return
         if self.spectX is None:
             return
         if self.spectY is None:
@@ -497,7 +497,10 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.axRaw.grid(True)
 
         self.axRaw.set_xlabel('Time [s]')
-        self.axRaw.set_ylabel(self.pvNameRawDataY +' [' + self.pvRawData.units + ']') 
+        if self.offline: # No units offline
+           self.axRaw.set_ylabel(self.pvNameRawDataY) 
+        else:
+           self.axRaw.set_ylabel(self.pvNameRawDataY +' [' + self.pvRawData.units + ']') 
 
         # refresh canvas 
         self.canvas.draw()
