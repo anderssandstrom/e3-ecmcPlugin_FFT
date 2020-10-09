@@ -51,7 +51,9 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         super(ecmcFFTMainGui, self).__init__()
         self.offline = False
         self.pvPrefixStr = prefix
+        self.pvPrefixOrigStr = prefix  # save for restore after open datafile
         self.fftPluginId = fftPluginId
+        self.fftPluginOrigId = fftPluginId
         self.allowSave = False
         if prefix is None or fftPluginId is None:
             self.offline = True
@@ -185,17 +187,6 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
                                ", nfft=" + str(self.NFFT))       
 
     def buildPvNames(self):
-        if self.offline:
-           self.pvNameSpectY = None
-           self.pvNameSpectX = None
-           self.pvNameRawDataY = None
-           self.pvnNameEnable = None
-           self.pvnNameTrigg = None
-           self.pvnNameSource = None
-           self.pvnNameSampleRate = None
-           self.pvnNameNFFT = None
-           self.pvnNameMode = None
-        else:
            # Pv names based on structure:  <prefix>Plugin-FFT<fftPluginId>-<suffixname>
            self.pvNameSpectY = self.buildPvName('Spectrum-Amp-Act') # "IOC_TEST:Plugin-FFT1-Spectrum-Amp-Act"        
            self.pvNameSpectX = self.buildPvName('Spectrum-X-Axis-Act') # "IOC_TEST:Plugin-FFT1-Spectrum-X-Axis-Act"
@@ -356,6 +347,10 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         if self.pause:
             self.pauseBtn.setStyleSheet("background-color: red")
         else:
+            self.pvPrefixStr = self.pvPrefixOrigStr  # Restore if dataset  was opened
+            self.fftPluginId = self.fftPluginOrigId  # Restore if dataset  was opened
+            self.buildPvNames()
+
             self.pauseBtn.setStyleSheet("background-color: green")
             # Retrigger plots with newest values
             self.comSignalSpectY.data_signal.emit(self.spectY)
@@ -413,9 +408,8 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.mode         = npzfile['mode']            
         self.pvPrefixStr  = str(npzfile['pvPrefixStr'])
         self.fftPluginId  = npzfile['fftPluginId']     
-
-        if self.offline: # do not overwrite if online mode
-           self.buildPvNames()
+        
+        self.buildPvNames()
         
         # trigg draw
         self.comSignalMode.data_signal.emit(self.mode)
