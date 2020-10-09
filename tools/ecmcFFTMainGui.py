@@ -82,7 +82,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.rawdataY = None
         self.rawdataX = None
         self.enable = None
-        
+
         self.pvMode = None
 
         self.createWidgets()
@@ -146,7 +146,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
         self.setLayout(layoutVert)                
 
     def setStatusOfWidgets(self):
-
+        self.saveBtn.setEnabled(self.allowSave)
         if self.offline:
             self.enableBtn.setStyleSheet("background-color: grey")
             self.enableBtn.setEnabled(False)
@@ -504,7 +504,7 @@ class ecmcFFTMainGui(QtWidgets.QDialog):
 
         # refresh canvas 
         self.canvas.draw()
-
+        self.allowSave = True
         self.axRaw.autoscale(enable=True)
 
 def printOutHelp():
