@@ -273,6 +273,8 @@ static.sineval:=sin(2*pi*${FREQ=5}*static.time);
 
 ### FFT GUI (FFT and rawdata plots + controls)
 A simple tool, [ecmcFFTMainGui.py](tools/ecmcFFTMainGui.py), to visualize the calculated spectrum, rawdata and also plugin controls can be found in the tools directory. The GUI connects to the plugin records over pypics framwork.
+The gui are included in the ecmccomgui repo:
+https://github.com/anderssandstrom/ecmccomgui
 
 Example: ecmcFFTMainGui.py help printout
 ```
