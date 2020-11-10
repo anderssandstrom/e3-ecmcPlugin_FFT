@@ -1,5 +1,5 @@
 #
-EPICS_MODULE_NAME:=ecmcPlugin_FFT
+EPICS_MODULE_NAME:=ecmc_plugin_fft
 
 EPICS_MODULE_TAG:=master
 #
