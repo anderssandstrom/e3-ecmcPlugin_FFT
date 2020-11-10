@@ -102,8 +102,9 @@ class ecmcFFT : public asynPortDriver {
   size_t                cfgNfft_;            // Config: Data set size
   int                   cfgEnable_;          // Config: Enable data acq./calc.
   FFT_MODE              cfgMode_;            // Config: Mode continous or triggered.
-  double                cfgFFTSampleRateHz_; // Config: Sample rate (defaukts to ecmc rate)
+  double                cfgEcmcSampleRateHz_; // Config: Sample rate (defaults to ecmc rate)
   double                cfgScale_;
+  double                cfgDataSampleRateHz_; // Config: Sample for data
 
   // Asyn
   int                   asynEnableId_;       // Enable/disable acq./calcs

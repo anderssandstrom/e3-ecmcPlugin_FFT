@@ -121,7 +121,8 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   asynSRateId_      = -1;    // Sample rate Hz
 
   ecmcSampleRateHz_ = getEcmcSampleRate();
-  cfgFFTSampleRateHz_ = ecmcSampleRateHz_;
+  cfgEcmcSampleRateHz_ = ecmcSampleRateHz_;
+  cfgDataSampleRateHz_ = ecmcSampleRateHz_;
 
   // Config defaults
   cfgDbgMode_       = 0;
@@ -140,17 +141,17 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   }
 
   // Check valid sample rate
-  if(cfgFFTSampleRateHz_ <= 0) {
+  if(cfgEcmcSampleRateHz_ <= 0) {
     throw std::out_of_range("FFT Invalid sample rate"); 
   }
-  if(cfgFFTSampleRateHz_ > ecmcSampleRateHz_) {
+  if(cfgEcmcSampleRateHz_ > ecmcSampleRateHz_) {
     printf("Warning FFT sample rate faster than ecmc rate. FFT rate will be set to ecmc rate.\n");
-    cfgFFTSampleRateHz_ = ecmcSampleRateHz_;
+    cfgEcmcSampleRateHz_ = ecmcSampleRateHz_;
   }
 
   // Se if any data update cycles should be ignored
   // example ecmc 1000Hz, fft 100Hz then ignore 9 cycles (could be strange if not multiples)
-  ignoreCycles_ = ecmcSampleRateHz_ / cfgFFTSampleRateHz_ -1;
+  ignoreCycles_ = ecmcSampleRateHz_ / cfgEcmcSampleRateHz_ -1;
 
   // set scale factor
   scale_ = 1.0 / ((double)cfgNfft_); // sqrt((double)cfgNfft_);
@@ -275,7 +276,7 @@ void ecmcFFT::parseConfigStr(char *configStr) {
       // ECMC_PLUGIN_RATE_OPTION_CMD rate in HZ
       else if (!strncmp(pThisOption, ECMC_PLUGIN_RATE_OPTION_CMD, strlen(ECMC_PLUGIN_RATE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_RATE_OPTION_CMD);
-        cfgFFTSampleRateHz_ = atof(pThisOption);
+        cfgEcmcSampleRateHz_ = atof(pThisOption);
       }
 
       // ECMC_PLUGIN_SCALE_OPTION_CMD rate in HZ
@@ -320,6 +321,12 @@ void ecmcFFT::connectToDataSource() {
   if( !dataTypeSupported(dataItem_->getEcmcDataType()) ) {
     throw std::invalid_argument( "Data type not supported." );
   }
+
+  // Add oversampling
+  cfgDataSampleRateHz_ = cfgDataSampleRateHz_ * dataItem_->getEcmcDataSize()/dataItem_->getEcmcDataElementSize();
+  setDoubleParam(asynSRateId_, cfgDataSampleRateHz_);
+  callParamCallbacks();
+
   dataSourceLinked_ = 1;
   updateStatus(IDLE);
 }
@@ -818,7 +825,7 @@ void ecmcFFT::initAsyn() {
   if( createParam(0, paramName.c_str(), asynParamFloat64, &asynSRateId_ ) != asynSuccess ) {
     throw std::runtime_error("Failed create asyn parameter trigg");
   }
-  setDoubleParam(asynSRateId_, cfgFFTSampleRateHz_);
+  setDoubleParam(asynSRateId_, cfgDataSampleRateHz_);
 
   // Update integers
   callParamCallbacks();
@@ -995,7 +1002,7 @@ asynStatus ecmcFFT::readInt8Array(asynUser *pasynUser, epicsInt8 *value,
 asynStatus  ecmcFFT::readFloat64(asynUser *pasynUser, epicsFloat64 *value) {
   int function = pasynUser->reason;
   if( function == asynSRateId_ ) {
-    *value = cfgFFTSampleRateHz_;
+    *value = cfgDataSampleRateHz_;
     return asynSuccess;
   }
 
