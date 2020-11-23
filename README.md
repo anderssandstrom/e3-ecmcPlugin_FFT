@@ -1,4 +1,4 @@
-e3-ecmcPlugin_FFT
+e3-ecmc_plugin_fft
 ======
 ESS Site-specific EPICS module : ecmcPlugin_FFT
 
