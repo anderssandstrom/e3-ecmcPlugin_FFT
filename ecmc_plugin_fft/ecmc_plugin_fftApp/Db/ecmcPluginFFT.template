@@ -124,4 +124,12 @@ record(ai,"$(P)Plugin-FFT${INDEX}-SampleRate-Act"){
   field(TSE,  "0")
 }
 
-
+# Actual buffer index
+record(longin,"$(P)Plugin-FFT${INDEX}-BuffIdAct"){
+  field(DESC, "Current buffer index")
+  field(PINI, "1")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.buffid")
+  field(SCAN, "I/O Intr")
+  field(TSE,  "0")
+}

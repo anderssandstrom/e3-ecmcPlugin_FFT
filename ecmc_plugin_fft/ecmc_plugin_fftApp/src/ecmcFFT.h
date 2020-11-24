@@ -118,6 +118,7 @@ class ecmcFFT : public asynPortDriver {
   int                   asynFFTXAxisId_;     // FFT X-axis frequencies
   int                   asynNfftId_;         // NFFT
   int                   asynSRateId_;        // Sample rate
+  int                   asynElementsInBuffer_;  // Current buffer index
 
   // Thread related
   epicsEvent            doCalcEvent_;

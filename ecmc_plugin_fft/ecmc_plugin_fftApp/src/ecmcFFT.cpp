@@ -26,6 +26,7 @@
 #define ECMC_PLUGIN_ASYN_FFT_X_FREQS "fftxaxis"
 #define ECMC_PLUGIN_ASYN_NFFT        "nfft"
 #define ECMC_PLUGIN_ASYN_RATE        "samplerate"
+#define ECMC_PLUGIN_ASYN_BUFF_ID     "buffid"
 
 
 #include <sstream>
@@ -119,6 +120,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   asynFFTXAxisId_   = -1;    // FFT X-axis frequencies
   asynNfftId_       = -1;    // Nfft
   asynSRateId_      = -1;    // Sample rate Hz
+  asynElementsInBuffer_= -1;
 
   ecmcSampleRateHz_ = getEcmcSampleRate();
   cfgEcmcSampleRateHz_ = ecmcSampleRateHz_;
@@ -764,7 +766,7 @@ void ecmcFFT::initAsyn() {
   }
   doCallbacksFloat64Array(fftBufferResultAmp_, cfgNfft_/2+1, asynFFTAmpId_,0);
 
-  // Add fft mode "plugin.fft%d.mode"
+  // Add fft "plugin.fft%d.mode"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_MODE;
 
@@ -773,7 +775,7 @@ void ecmcFFT::initAsyn() {
   }
   setIntegerParam(asynFFTModeId_, (epicsInt32)cfgMode_);
 
-  // Add fft mode "plugin.fft%d.status"
+  // Add fft "plugin.fft%d.status"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_STAT;
 
@@ -782,7 +784,7 @@ void ecmcFFT::initAsyn() {
   }
   setIntegerParam(asynFFTStatId_, (epicsInt32)status_);
 
-  // Add fft mode "plugin.fft%d.source"
+  // Add fft "plugin.fft%d.source"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_SOURCE;
 
@@ -791,7 +793,7 @@ void ecmcFFT::initAsyn() {
   }
   doCallbacksInt8Array(cfgDataSourceStr_, strlen(cfgDataSourceStr_), asynSourceId_,0);
 
-  // Add fft mode "plugin.fft%d.trigg"
+  // Add fft "plugin.fft%d.trigg"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_TRIGG;
 
@@ -800,7 +802,7 @@ void ecmcFFT::initAsyn() {
   }
   setIntegerParam(asynTriggId_, (epicsInt32)triggOnce_);
 
-  // Add fft mode "plugin.fft%d.fftxaxis"
+  // Add fft "plugin.fft%d.fftxaxis"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_FFT_X_FREQS;
 
@@ -809,23 +811,32 @@ void ecmcFFT::initAsyn() {
   }
   doCallbacksFloat64Array(fftBufferXAxis_,cfgNfft_ / 2 + 1, asynFFTXAxisId_,0);
 
-  // Add fft mode "plugin.fft%d.nfft"
+  // Add fft "plugin.fft%d.nfft"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_NFFT;
 
   if( createParam(0, paramName.c_str(), asynParamInt32, &asynNfftId_ ) != asynSuccess ) {
-    throw std::runtime_error("Failed create asyn parameter trigg");
+    throw std::runtime_error("Failed create asyn parameter nfft");
   }
   setIntegerParam(asynNfftId_, (epicsInt32)cfgNfft_);
 
-  // Add fft mode "plugin.fft%d.rate"
+  // Add fft "plugin.fft%d.rate"
   paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
              "." + ECMC_PLUGIN_ASYN_RATE;
 
   if( createParam(0, paramName.c_str(), asynParamFloat64, &asynSRateId_ ) != asynSuccess ) {
-    throw std::runtime_error("Failed create asyn parameter trigg");
+    throw std::runtime_error("Failed create asyn parameter rate");
   }
   setDoubleParam(asynSRateId_, cfgDataSampleRateHz_);
+
+  // Add fft "plugin.fft%d.buffid"
+  paramName = ECMC_PLUGIN_ASYN_PREFIX + to_string(objectId_) + 
+             "." + ECMC_PLUGIN_ASYN_BUFF_ID;
+
+  if( createParam(0, paramName.c_str(), asynParamInt32, &asynElementsInBuffer_ ) != asynSuccess ) {
+    throw std::runtime_error("Failed create asyn parameter trigg");
+  }
+  setIntegerParam(asynElementsInBuffer_, (epicsInt32)elementsInBuffer_);
 
   // Update integers
   callParamCallbacks();
@@ -861,6 +872,9 @@ FFT_STATUS ecmcFFT::getStatusFFT() {
 void ecmcFFT::updateStatus(FFT_STATUS status) {
   status_ = status;
   setIntegerParam(asynFFTStatId_,(epicsInt32) status);
+  
+  setIntegerParam(asynElementsInBuffer_, (epicsInt32)elementsInBuffer_);
+
   callParamCallbacks();
 }
 
