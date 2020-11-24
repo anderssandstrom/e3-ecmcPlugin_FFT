@@ -950,6 +950,9 @@ asynStatus ecmcFFT::readInt32(asynUser *pasynUser, epicsInt32 *value) {
   }else if( function == asynNfftId_ ){
     *value = (epicsInt32)cfgNfft_;
     return asynSuccess;
+  }else if( function == asynElementsInBuffer_){
+    *value = (epicsInt32)elementsInBuffer_;
+    return asynSuccess;
   }
 
   return asynError;
