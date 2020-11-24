@@ -80,4 +80,4 @@ dbLoadRecords("ecmcGeneral.db","P=${ECMC_PREFIX},PORT=${ECMC_ASYN_PORT},ADDR=0,T
 ecmcConfigOrDie "Cfg.SetAppMode(1)"
 
 iocInit
-
+dbl > pvs.log
