@@ -122,8 +122,8 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   asynSRateId_      = -1;    // Sample rate Hz
   asynElementsInBuffer_= -1;
 
-  ecmcSampleRateHz_ = getEcmcSampleRate();
-  cfgEcmcSampleRateHz_ = ecmcSampleRateHz_;
+  ecmcSampleRateHz_    = getEcmcSampleRate();
+  cfgFFTSampleRateHz_  = ecmcSampleRateHz_;
   cfgDataSampleRateHz_ = ecmcSampleRateHz_;
 
   // Config defaults
@@ -143,17 +143,17 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   }
 
   // Check valid sample rate
-  if(cfgEcmcSampleRateHz_ <= 0) {
+  if(cfgFFTSampleRateHz_ <= 0) {
     throw std::out_of_range("FFT Invalid sample rate"); 
   }
-  if(cfgEcmcSampleRateHz_ > ecmcSampleRateHz_) {
+  if(cfgFFTSampleRateHz_ > ecmcSampleRateHz_) {
     printf("Warning FFT sample rate faster than ecmc rate. FFT rate will be set to ecmc rate.\n");
-    cfgEcmcSampleRateHz_ = ecmcSampleRateHz_;
+    cfgFFTSampleRateHz_ = ecmcSampleRateHz_;
   }
 
   // Se if any data update cycles should be ignored
   // example ecmc 1000Hz, fft 100Hz then ignore 9 cycles (could be strange if not multiples)
-  ignoreCycles_ = ecmcSampleRateHz_ / cfgEcmcSampleRateHz_ -1;
+  ignoreCycles_ = ecmcSampleRateHz_ / cfgFFTSampleRateHz_ -1;
 
   // set scale factor
   scale_ = 1.0 / ((double)cfgNfft_); // sqrt((double)cfgNfft_);
@@ -278,7 +278,7 @@ void ecmcFFT::parseConfigStr(char *configStr) {
       // ECMC_PLUGIN_RATE_OPTION_CMD rate in HZ
       else if (!strncmp(pThisOption, ECMC_PLUGIN_RATE_OPTION_CMD, strlen(ECMC_PLUGIN_RATE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_RATE_OPTION_CMD);
-        cfgEcmcSampleRateHz_ = atof(pThisOption);
+        cfgFFTSampleRateHz_ = atof(pThisOption);
       }
 
       // ECMC_PLUGIN_SCALE_OPTION_CMD rate in HZ
@@ -325,7 +325,7 @@ void ecmcFFT::connectToDataSource() {
   }
 
   // Add oversampling
-  cfgDataSampleRateHz_ = cfgDataSampleRateHz_ * dataItem_->getEcmcDataSize()/dataItem_->getEcmcDataElementSize();
+  cfgDataSampleRateHz_ = cfgFFTSampleRateHz_ * dataItem_->getEcmcDataSize()/dataItem_->getEcmcDataElementSize();
   setDoubleParam(asynSRateId_, cfgDataSampleRateHz_);
   callParamCallbacks();
 
