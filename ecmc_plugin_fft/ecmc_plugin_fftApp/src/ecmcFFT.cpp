@@ -480,7 +480,7 @@ void ecmcFFT::calcFFTXAxis() {
   double freq = 0;
   size_t size = dataItemInfo_->dataSize;
     
-  double deltaFreq = ecmcSampleRateHz_* ((double)size / 
+  double deltaFreq = cfgDataSampleRateHz_* ((double)size / 
                      (double)dataItemInfo_->dataElementSize) / ((double)(cfgNfft_));
   for(unsigned int i = 0; i < (cfgNfft_ / 2 + 1); ++i) {
     fftBufferXAxis_[i] = freq;
