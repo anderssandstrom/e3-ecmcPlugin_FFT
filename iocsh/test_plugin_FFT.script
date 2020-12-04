@@ -7,12 +7,11 @@ epicsEnvSet("IOC" ,"$(IOC="IOC_TEST")")
 epicsEnvSet("ECMCCFG_INIT" ,"")  #Only run startup once (auto at PSI, need call at ESS), variable set to "#" in startup.cmd
 epicsEnvSet("SCRIPTEXEC" ,"$(SCRIPTEXEC="iocshLoad")")
 
-require ecmccfg     "develop"
+require ecmccfg     "6.3.0"
 
 ##############################################################################
 ###### Startup
-require ecmc        "6.2.3"
-require stream      "${stream_VER=2.8.10}"
+require ecmc        "6.3.0"
 
 #-------------------------------------------------------------------------------
 #- define default PATH for scripts and database/templates
@@ -46,19 +45,19 @@ epicsEnvSet("FFT_NELM", 1024)
 
 ########################################################################s######
 ## Load plugin: FFT 
-epicsEnvSet(ECMC_PLUGIN_FILNAME,"/home/pi/epics/base-7.0.4/require/3.2.0/siteMods/ecmc_plugin_fft/master/lib/${EPICS_HOST_ARCH=linux-x86_64}/libecmc_plugin_fft.so")
+epicsEnvSet(ECMC_PLUGIN_FILNAME,"/home/pi/epics/base-7.0.4/require/3.3.0/siteMods/ecmc_plugin_fft/master/lib/${EPICS_HOST_ARCH=linux-x86_64}/libecmc_plugin_fft.so")
 epicsEnvSet(ECMC_PLUGIN_CONFIG,"SOURCE=plcs.plc0.static.sineval;DBG_PRINT=0;NFFT=1024;RATE=100;RM_DC=1;SCALE=1;MODE=CONT;ENABLE=1;")
 ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=0,FILE=${ECMC_PLUGIN_FILNAME},CONFIG='${ECMC_PLUGIN_CONFIG}', REPORT=1"
 # Note: INDEX is the index of FFT object in FFT plugin and not PLUGIN_ID. In this case the same
-dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=0, NELM=${FFT_NELM}")
+dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=0, NELM=${FFT_NELM}, AMP_DESC='Latency amplitude',AMP_EGU='ns',RAW_DESC='Latency',AMP_EGU='ns'")
 
 ########################################################################s######
 ## Load plugin: FFT again (will create a new FFT object in the same namespace)
-epicsEnvSet(ECMC_PLUGIN_FILNAME,"/home/pi/epics/base-7.0.4/require/3.2.0/siteMods/ecmc_plugin_fft/master/lib/${EPICS_HOST_ARCH=linux-x86_64}/libecmc_plugin_fft.so")
+epicsEnvSet(ECMC_PLUGIN_FILNAME,"/home/pi/epics/base-7.0.4/require/3.3.0/siteMods/ecmc_plugin_fft/master/lib/${EPICS_HOST_ARCH=linux-x86_64}/libecmc_plugin_fft.so")
 epicsEnvSet(ECMC_PLUGIN_CONFIG,"SOURCE=ecmc.thread.latency.max;DBG_PRINT=0;NFFT=1024;ENABLE=1;")
 ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=1,FILE=${ECMC_PLUGIN_FILNAME},CONFIG='${ECMC_PLUGIN_CONFIG}', REPORT=1"
 # Note: INDEX is the index of FFT object in FFT plugin and not PLUGIN_ID. In this case the same
-dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=1, NELM=${FFT_NELM}")
+dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=1, NELM=${FFT_NELM}, AMP_DESC='Sine amplitude',AMP_EGU='',RAW_DESC='Sine',AMP_EGU=''")
 epicsEnvUnset(ECMC_PLUGIN_FILNAME)
 epicsEnvUnset(ECMC_PLUGIN_CONFIG)
 
