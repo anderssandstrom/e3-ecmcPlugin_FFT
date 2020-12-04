@@ -23,7 +23,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Source"){
 # Rawdata
 record(waveform,"$(P)Plugin-FFT${INDEX}-Raw-Data-Act"){
   info(asyn:FIFO, "1000")
-  field(DESC, "Raw data")
+  field(DESC, "${RAW_DESC="Raw data"}")
   field(PINI, "1")
   field(DTYP, "asynFloat64ArrayIn")
   field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.rawdata")
@@ -31,6 +31,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-Raw-Data-Act"){
   field(NELM, "$(NELM)")
   field(SCAN, "I/O Intr")
   field(TSE,  "0")
+  field(EGU,  "${RAW_EGU= }")
 }
 
 # Pre-processed data
@@ -49,7 +50,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-PreProc-Data-Act"){
 # FFT amplitude result
 record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-Amp-Act"){
   info(asyn:FIFO, "1000")
-  field(DESC, "FFT spectrum amplitude result")
+  field(DESC, "${AMP_DESC="Spectrum amplitude"}")  
   field(PINI, "1")
   field(DTYP, "asynFloat64ArrayIn")
   field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.fftamplitude")
