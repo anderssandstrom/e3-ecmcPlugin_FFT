@@ -49,7 +49,7 @@ epicsEnvSet(ECMC_PLUGIN_FILNAME,"/home/pi/epics/base-7.0.4/require/3.3.0/siteMod
 epicsEnvSet(ECMC_PLUGIN_CONFIG,"SOURCE=plcs.plc0.static.sineval;DBG_PRINT=0;NFFT=1024;RATE=100;RM_DC=1;SCALE=1;MODE=CONT;ENABLE=1;")
 ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=0,FILE=${ECMC_PLUGIN_FILNAME},CONFIG='${ECMC_PLUGIN_CONFIG}', REPORT=1"
 # Note: INDEX is the index of FFT object in FFT plugin and not PLUGIN_ID. In this case the same
-dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=0, NELM=${FFT_NELM}, AMP_DESC='Latency amplitude',AMP_EGU='ns',RAW_DESC='Latency',AMP_EGU='ns'")
+dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=0, NELM=${FFT_NELM}, AMP_DESC='Sine amplitude',AMP_EGU='',RAW_DESC='Sine',AMP_EGU='', TITLE='FFT of sinus in 5Hz'")
 
 ########################################################################s######
 ## Load plugin: FFT again (will create a new FFT object in the same namespace)
@@ -57,12 +57,13 @@ epicsEnvSet(ECMC_PLUGIN_FILNAME,"/home/pi/epics/base-7.0.4/require/3.3.0/siteMod
 epicsEnvSet(ECMC_PLUGIN_CONFIG,"SOURCE=ecmc.thread.latency.max;DBG_PRINT=0;NFFT=1024;ENABLE=1;")
 ${SCRIPTEXEC} ${ecmccfg_DIR}loadPlugin.cmd, "PLUGIN_ID=1,FILE=${ECMC_PLUGIN_FILNAME},CONFIG='${ECMC_PLUGIN_CONFIG}', REPORT=1"
 # Note: INDEX is the index of FFT object in FFT plugin and not PLUGIN_ID. In this case the same
-dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=1, NELM=${FFT_NELM}, AMP_DESC='Sine amplitude',AMP_EGU='',RAW_DESC='Sine',AMP_EGU=''")
+dbLoadRecords(ecmcPluginFFT.template,"P=$(IOC):,INDEX=1, NELM=${FFT_NELM}, AMP_DESC='Latency amplitude',AMP_EGU='ns',RAW_DESC='Latency',AMP_EGU='ns',TITLE='FFT of ecmc latencny'")
+
 epicsEnvUnset(ECMC_PLUGIN_FILNAME)
 epicsEnvUnset(ECMC_PLUGIN_CONFIG)
 
 ##############################################################################
-## PLC 0: Generate a sine wave at 10Hz
+## PLC 0: Generate a sine wave at 5Hz
 $(SCRIPTEXEC) $(ecmccfg_DIR)loadPLCFile.cmd, "PLC_ID=0, SAMPLE_RATE_MS=10,FILE=./plc/plc_no_ec_fft_sin.plc, PLC_MACROS='FREQ=5'")
 
 ##############################################################################

@@ -50,7 +50,7 @@ record(waveform,"$(P)Plugin-FFT${INDEX}-PreProc-Data-Act"){
 # FFT amplitude result
 record(waveform,"$(P)Plugin-FFT${INDEX}-Spectrum-Amp-Act"){
   info(asyn:FIFO, "1000")
-  field(DESC, "${AMP_DESC="Spectrum amplitude"}")  
+  field(DESC, "${AMP_DESC="Spectrum amplitude"}")
   field(PINI, "1")
   field(DTYP, "asynFloat64ArrayIn")
   field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.fftamplitude")
@@ -133,4 +133,10 @@ record(longin,"$(P)Plugin-FFT${INDEX}-BuffIdAct"){
   field(INP,  "@asyn(PLUGIN.FFT${INDEX},$(ADDR=0),$(TIMEOUT=1000))plugin.fft${INDEX}.buffid")
   field(SCAN, "I/O Intr")
   field(TSE,  "0")
+}
+
+# Plot title (for epicscomgui)
+record(stringin,"$(P)Plugin-FFT${INDEX}-Title"){
+  field(DESC, "Title of FFT plot")
+  field(VAL,  "${TITLE="FFT"}")  
 }
