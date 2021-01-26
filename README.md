@@ -52,6 +52,7 @@ The different available configuration settings:
 * ENABLE=1/0       : Enable data acq. and calcs (can be controlled over asyn), default = disabled.
 * MODE=CONT/TRIGG  : Continious or triggered mode, defaults to TRIGG
 * RATE=rate in hz  : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate.
+* BREAKTABLE= EPICS breaktable : Apply breaktable to raw value.
 
 Example configuration string:
 ```
@@ -74,7 +75,7 @@ Example: Ethercat slave 1 analog input ch1
 #### DBG_PRINT (default: disabled)
 Enable/disable printouts from plugin can be made bu setting the "DBG_PRINT" option.
 
-Exmaple: Disable
+Example: Disable
 ```
 "DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
@@ -84,21 +85,21 @@ Defines number of samples for each measurement.
 
 Note: Must be a n² number..
 
-Exmaple: 1024
+Example: 1024
 ```
 "NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 #### SCALE (default 1.0)
 Apply custom scale to input data.
 
-Exmaple: 5.0
+Example: 5.0
 ```
 "SCALE=5.0;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 ### RM_DC
 Remove DC of input signal. Default is disabled.
 
-Exmaple: Remove DC offset
+Example: Remove DC offset
 ```
 "RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 
@@ -108,22 +109,22 @@ Remove linear component of input signal. Default is disabled.
 The linear component is calculated by least square method.
 Could be usefull for values that increase, like actual position.
 
-Exmaple: Remove linear component
+Example: Remove linear component
 ```
 "RM_LIN=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
 #### ENABLE (default: disabled)
 Enable data acq. and FFT calcs. The default settings is disabled so needs to be enabled from plc or over asyn in order to start calculations.
 
-Exmaple: Enable at startup by config
+Example: Enable at startup by config
 ```
 "ENABLE=1;RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
-Exmaple: Enable FFT index 0 from EPICS:
+Example: Enable FFT index 0 from EPICS:
 ```
 caput IOC_TEST:Plugin-FFT0-Enable 1
 ```
-Exmaple: Enable FFT index 0 from ecmc PLC code:
+Example: Enable FFT index 0 from ecmc PLC code:
 ```
 fft_enable(0,1)
 ```
@@ -152,11 +153,11 @@ Triggered mode:
 5. FTT results are sent by callback over asyn to epics records
 6. goto 1.
 
-Exmaple: Mode triggered
+Example: Mode triggered
 ```
 "MODE=TRIGG;ENABLE=1;RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
-Exmaple:  Mode from EPICS record
+Example:  Mode from EPICS record
 ```
 # CONT
 caput IOC_TEST:Plugin-FFT0-Mode-RB 1
@@ -169,10 +170,45 @@ Note: The record is a output record with readback so can both be read and writte
 Sets the sample rate of the raw input data (from data source). The default value is the ecmc rate for that data source.
 Note: only a lower and "integer" division of sample rate can be defined.
 
-Exmaple: Rate = 100Hz
+Example: Rate = 100Hz
 ```
-RATE=100;MODE=TRIGG;ENABLE=1;RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
+"RATE=100;MODE=TRIGG;ENABLE=1;RM_DC=1;SCALE=1;NFFT=1024;DBG_PRINT=0;SOURCE=ax1.poserr;"
 ```
+
+#### BREAKTABLE (default: no break table)
+ 
+Note: The break table must be added in EPICS and to "menuConvert"
+
+Example: Apply BREAKTABLE=typeTelemess33020_21877 to raw value
+```
+"...;BREAKTABLE=typeTelemess33020_21877;"
+```
+
+Example: Load custom breaktable in EPICS
+```
+dbLoadRecords ./bptBreakTable.dbd
+updateMenuConvert
+```
+
+Example: breaktable (in a bptBreakTable.dbd)
+```
+  # <raw> <eng>
+  breaktable(typeTelemess33020_21877) {
+	  2502.48 0
+	  4058.89 1.5
+    6164.64 3
+    8880.74 4.5
+    11993.57 6
+    15259.00 7.5
+    18371.84 9
+    21271.05 10.5
+    24658.54 12
+    27344.13 13.5
+    29297.28 15
+  }
+
+```
+
 ## EPICS records
 Each FFT plugin object will create a new asynportdriver-port named "PLUGIN.FFT<index>" (index is explaine above).
 The reason for a dedicated asynport is to disturb ecmc as little as possible.
