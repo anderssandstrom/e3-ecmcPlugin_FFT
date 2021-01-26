@@ -119,10 +119,8 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cycleCounter_     = 0;
   ignoreCycles_     = 0;
   dataSourceLinked_ = 0;
-  breakTableIndex_  = -1;
-  breakTable_       = 0;
+  breakTable_       = NULL;
   lastBreakPoint_   = 0;
-  breakInit_        = 1;
 
   // Asyn
   asynEnableId_     = -1;    // Enable/disable acq./calcs
@@ -457,13 +455,13 @@ void ecmcFFT::addDataToBuffer(double data) {
   
   if(rawDataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
     
-    if(breakTableIndex_>=0 && cfgBreakTableStr_ && interruptAccept) {
-      double breakData = data;                  
-      if (cvtRawToEngBpt(&breakData, breakTableIndex_, breakInit_, &breakTable_, &lastBreakPoint_)!=0) {        
+    if( cfgBreakTableStr_ && interruptAccept ) {
+      double breakData = data;
+      // Supply a breaktable (init=0, LINR must be > 1 but only used if init > 0)       
+      if (cvtRawToEngBpt(&breakData, 2, 0, &breakTable_, &lastBreakPoint_)!=0) {        
         //TODO: What does status here mean.. 
         //throw std::runtime_error("Breaktable conversion failed.\n");
       }
-      breakInit_ = 0; // Breack pointer should now be assigned
       //printf("Index %d: Before %lf, after %lf\n",objectId_,data,breakData);
       data = breakData * cfgScale_;
     } else {
@@ -1102,23 +1100,25 @@ int ecmcFFT::leastSquare(int n, const double y[], double* k, double* m){
 }
 
 bool ecmcFFT::verifyBreakTable() {
-  breakTableIndex_ = -1;
-  dbMenu   *menuConvert;
-  ELLLIST  missing;              
-  int      i;  
+  brkTable *pbrkTable;
+  bool found = false;
 
-  menuConvert = dbFindMenu(pdbbase,"menuConvert");
-  ellInit(&missing);
-  for(i=0; i<menuConvert->nChoice; i++)
-  {
-  // printf("menuConvertItem[%d] %s (looking for %s))\n",i,menuConvert->papChoiceValue[i], cfgBreakTableStr_);
-   if (strcmp(menuConvert->papChoiceValue[i],cfgBreakTableStr_)==0)
-   {
-      breakTableIndex_ = i;
-      printf("breakTable %s found as menuItem %d\n",cfgBreakTableStr_, breakTableIndex_);
-      break;
-   }   
+  for(pbrkTable = (brkTable *)ellFirst(&pdbbase->bptList);
+      pbrkTable;
+      pbrkTable = (brkTable *)ellNext(&pbrkTable->node)){
+    if (strcmp(cfgBreakTableStr_,pbrkTable->name)==0)
+    {
+        found = true;
+        breakTable_ = pbrkTable;
+        break;
+    }
   }
 
-  return breakTableIndex_>=0;
+  if(!found) {
+    breakTable_ = NULL;
+    throw std::out_of_range("Breaktable not found...");
+  }
+
+  return found;
 }
+

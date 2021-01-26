@@ -177,7 +177,7 @@ Example: Rate = 100Hz
 
 #### BREAKTABLE (default: no break table)
  
-Note: The break table must be added in EPICS and to "menuConvert"
+Note: The break table must be added in EPICS
 
 Example: Apply BREAKTABLE=typeTelemess33020_21877 to raw value
 ```
@@ -187,7 +187,6 @@ Example: Apply BREAKTABLE=typeTelemess33020_21877 to raw value
 Example: Load custom breaktable in EPICS
 ```
 dbLoadRecords ./bptBreakTable.dbd
-updateMenuConvert
 ```
 
 Example: breaktable (in a bptBreakTable.dbd)

@@ -92,10 +92,8 @@ class ecmcFFT : public asynPortDriver {
   int                   triggOnce_;
   int                   cycleCounter_;
   int                   ignoreCycles_;
-  int                   breakTableIndex_;
   void                  *breakTable_;
   short                 lastBreakPoint_;
-  short                 breakInit_;
   double                scale_;              // Config: Data set size  
   FFT_STATUS            status_;             // Status/state  (NO_STAT, IDLE, ACQ, CALC)
 
