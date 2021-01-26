@@ -123,7 +123,7 @@ struct ecmcPluginData pluginDataDef = {
                 "    "ECMC_PLUGIN_RM_LIN_OPTION_CMD"<1/0>        : Remove linear component in data (SOURCE) by least square, default = disabled.\n" 
                 "    "ECMC_PLUGIN_ENABLE_OPTION_CMD"<1/0>        : Enable data acq. and calcs (can be controlled over asyn), default = disabled.\n"
                 "    "ECMC_PLUGIN_MODE_OPTION_CMD"<CONT/TRIGG>   : Continious or triggered mode, defaults to TRIGG\n"
-                "    "ECMC_PLUGIN_RATE_OPTION_CMD"<rate in hz>   : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate."
+                "    "ECMC_PLUGIN_RATE_OPTION_CMD"<rate in hz>   : fft data sample rate in hz (must be lower than ecmc rate and (ecmc_rate/fft_rate)=integer), default = ecmc rate.\n"
                 "    "ECMC_PLUGIN_BREAKTABLE_OPTION_CMD"<brktab> : Use epics breaktable to convert raw values (applied before any other signal cond. alg.), default not used."
                 , 
   // Plugin version
