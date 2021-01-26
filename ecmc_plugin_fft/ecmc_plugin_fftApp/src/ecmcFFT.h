@@ -19,6 +19,7 @@
 #include "inttypes.h"
 #include <string>
 #include "kissfft/kissfft.hh"
+#include "dbBase.h"
 
 class ecmcFFT : public asynPortDriver {
  public:
@@ -68,6 +69,7 @@ class ecmcFFT : public asynPortDriver {
   void                  initAsyn();
   void                  updateStatus(FFT_STATUS status);  // Also updates asynparam
   static int            dataTypeSupported(ecmcEcDataType dt);
+  bool                  verifyBreakTable();
 
   ecmcDataItem         *dataItem_;
   ecmcDataItemInfo     *dataItemInfo_;
@@ -90,11 +92,16 @@ class ecmcFFT : public asynPortDriver {
   int                   triggOnce_;
   int                   cycleCounter_;
   int                   ignoreCycles_;
+  int                   breakTableIndex_;
+  void                  *breakTable_;
+  short                 lastBreakPoint_;
+  short                 breakInit_;
   double                scale_;              // Config: Data set size  
   FFT_STATUS            status_;             // Status/state  (NO_STAT, IDLE, ACQ, CALC)
 
   // Config options
   char*                 cfgDataSourceStr_;   // Config: data source string
+  char*                 cfgBreakTableStr_;   // Config: EPICS breaktable name
   int                   cfgDbgMode_;         // Config: allow dbg printouts
   int                   cfgApplyScale_;      // Config: apply scale 1/nfft
   int                   cfgDcRemove_;        // Config: remove dc (average) 

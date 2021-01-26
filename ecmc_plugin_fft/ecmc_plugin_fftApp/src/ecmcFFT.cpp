@@ -36,6 +36,17 @@
 #include "ecmcAsynPortDriverUtils.h"
 #include "epicsThread.h"
 
+// Breaktable
+#include "ellLib.h"
+#include "dbStaticLib.h"
+#include "dbAccess.h"
+#include "epicsVersion.h"
+#include "cvtTable.h"
+#ifdef BASE_VERSION
+#define EPICS_3_13
+extern DBBASE *pdbbase;
+#endif
+
 
 // New data callback from ecmc
 static int printMissingObjError = 1;
@@ -92,6 +103,7 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
                    0) /* Default stack size */
                    {
   cfgDataSourceStr_ = NULL;
+  cfgBreakTableStr_ = NULL;
   rawDataBuffer_    = NULL;
   dataItem_         = NULL;
   dataItemInfo_     = NULL;
@@ -107,6 +119,10 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   cycleCounter_     = 0;
   ignoreCycles_     = 0;
   dataSourceLinked_ = 0;
+  breakTableIndex_  = -1;
+  breakTable_       = 0;
+  lastBreakPoint_   = 0;
+  breakInit_        = 1;
 
   // Asyn
   asynEnableId_     = -1;    // Enable/disable acq./calcs
@@ -149,6 +165,11 @@ ecmcFFT::ecmcFFT(int   fftIndex,       // index of this object (if several is cr
   if(cfgFFTSampleRateHz_ > ecmcSampleRateHz_) {
     printf("Warning FFT sample rate faster than ecmc rate. FFT rate will be set to ecmc rate.\n");
     cfgFFTSampleRateHz_ = ecmcSampleRateHz_;
+  }
+
+  // Check if breaktable
+  if(cfgBreakTableStr_) {
+    verifyBreakTable(); 
   }
 
   // Se if any data update cycles should be ignored
@@ -199,6 +220,9 @@ ecmcFFT::~ecmcFFT() {
   if(cfgDataSourceStr_) {
     free(cfgDataSourceStr_);
   }
+  if(cfgBreakTableStr_) {
+    free(cfgBreakTableStr_);
+  }  
   if(fftDouble_) {
     delete fftDouble_;
   }
@@ -232,6 +256,12 @@ void ecmcFFT::parseConfigStr(char *configStr) {
       else if (!strncmp(pThisOption, ECMC_PLUGIN_SOURCE_OPTION_CMD, strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD))) {
         pThisOption += strlen(ECMC_PLUGIN_SOURCE_OPTION_CMD);
         cfgDataSourceStr_=strdup(pThisOption);
+      }
+
+      // ECMC_PLUGIN_BREAKTABLE_OPTION_CMD (EPICS breaktable name)
+      else if (!strncmp(pThisOption, ECMC_PLUGIN_BREAKTABLE_OPTION_CMD, strlen(ECMC_PLUGIN_BREAKTABLE_OPTION_CMD))) {
+        pThisOption += strlen(ECMC_PLUGIN_BREAKTABLE_OPTION_CMD);
+        cfgBreakTableStr_=strdup(pThisOption);
       }
 
       // ECMC_PLUGIN_NFFT_OPTION_CMD (1/0)
@@ -424,9 +454,24 @@ void ecmcFFT::dataUpdatedCallback(uint8_t*       data,
 }
 
 void ecmcFFT::addDataToBuffer(double data) {
+  
   if(rawDataBuffer_ && (elementsInBuffer_ < cfgNfft_) ) {
-    rawDataBuffer_[elementsInBuffer_] = data* cfgScale_;
-    prepProcDataBuffer_[elementsInBuffer_] = data *cfgScale_;
+    
+    if(breakTableIndex_>=0 && cfgBreakTableStr_ && interruptAccept) {
+      double breakData = data;                  
+      if (cvtRawToEngBpt(&breakData, breakTableIndex_, breakInit_, &breakTable_, &lastBreakPoint_)!=0) {        
+        //TODO: What does status here mean.. 
+        //throw std::runtime_error("Breaktable conversion failed.\n");
+      }
+      breakInit_ = 0; // Breack pointer should now be assigned
+      //printf("Index %d: Before %lf, after %lf\n",objectId_,data,breakData);
+      data = breakData * cfgScale_;
+    } else {
+      data = data * cfgScale_;
+    }
+
+    rawDataBuffer_[elementsInBuffer_] = data;
+    prepProcDataBuffer_[elementsInBuffer_] = data;
   }
   elementsInBuffer_ ++;
 }
@@ -1054,4 +1099,26 @@ int ecmcFFT::leastSquare(int n, const double y[], double* k, double* m){
   *k = (n * sumxy  -  sumx * sumy) / denom;
   *m = (sumy * sumx2  -  sumx * sumxy) / denom;
   return 0; 
+}
+
+bool ecmcFFT::verifyBreakTable() {
+  breakTableIndex_ = -1;
+  dbMenu   *menuConvert;
+  ELLLIST  missing;              
+  int      i;  
+
+  menuConvert = dbFindMenu(pdbbase,"menuConvert");
+  ellInit(&missing);
+  for(i=0; i<menuConvert->nChoice; i++)
+  {
+  // printf("menuConvertItem[%d] %s (looking for %s))\n",i,menuConvert->papChoiceValue[i], cfgBreakTableStr_);
+   if (strcmp(menuConvert->papChoiceValue[i],cfgBreakTableStr_)==0)
+   {
+      breakTableIndex_ = i;
+      printf("breakTable %s found as menuItem %d\n",cfgBreakTableStr_, breakTableIndex_);
+      break;
+   }   
+  }
+
+  return breakTableIndex_>=0;
 }
