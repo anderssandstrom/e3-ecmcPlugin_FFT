@@ -518,13 +518,8 @@ void ecmcFFT::calcFFTAmp() {
 
 // Should be enough todo once
 void ecmcFFT::calcFFTXAxis() {
-  //fill x axis buffer with freqs
-  
+  //fill x axis buffer with freqs  
   double freq = 0;
-  size_t size = dataItemInfo_->dataSize;
-  printf("cfgDataSampleRateHz_ %lf, size %u, dataElementSize %u \n", cfgDataSampleRateHz_, size, dataItemInfo_->dataElementSize);  
-  //double deltaFreq = cfgDataSampleRateHz_* ((double)size / 
-  //                   (double)dataItemInfo_->dataElementSize) / ((double)(cfgNfft_));
   double deltaFreq = cfgDataSampleRateHz_ / ((double)(cfgNfft_));
   for(unsigned int i = 0; i < (cfgNfft_ / 2 + 1); ++i) {
     fftBufferXAxis_[i] = freq;
